@@ -46,17 +46,4 @@ class ModelApi():
             print(f"Error during image processing: {e}")
             return None
 
-if __name__ == '__main__':
-    api = ModelApi()
-
-    text_response = api.textQuery("Tell me a short joke.")
-    if text_response:
-        print("Text Response:", text_response)
-
-    image_path = "images/image.jpg" 
-    image_prompt = "Describe what is in this image."
-
-    image_response = api.imageQuery(image_path, image_prompt)
-    if image_response:
-        print("Image Response:", image_response)
 

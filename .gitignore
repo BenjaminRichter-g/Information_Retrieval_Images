@@ -1,2 +1,5 @@
 InformationRetrievalEnv
 .env
+.DS_Store
+__pycache__/
+labels.db
