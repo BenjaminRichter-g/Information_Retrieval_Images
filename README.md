@@ -3,6 +3,9 @@
 This is a repository consisting of the code required to both label an image dataset thanks to AI and 
 then to search through this dataset through prompts.
 
+This will eventually be usable with a pre-determined dataset but also serve as a software which can be fed
+an arbitrary set of images, label them and allow you to search through them with prompts.
+
 ## How to Use
 
 1. Get the Gemini api key
