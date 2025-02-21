@@ -21,7 +21,7 @@ def label_images(directory, model, conn):
     """Iterates over image files in the given directory, labels those not already in the database, and stores the results."""
     cursor = conn.cursor()
     for filename in os.listdir(directory):
-        if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+        if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.heic')):
             full_path = os.path.join(directory, filename)
             # Check if this image is already labeled
             cursor.execute("SELECT id FROM images WHERE image_path = ?", (full_path,))

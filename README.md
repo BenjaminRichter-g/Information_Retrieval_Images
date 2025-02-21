@@ -24,5 +24,5 @@ source InformationRetrievalEnv/bin/activate
 
 pip install -r requirements.txt
 
-python3 gemini_api.py
+python3 main.py -create-lable , in order to label all the images in the /images folder and store them in the db
 
