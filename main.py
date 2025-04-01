@@ -1,64 +1,46 @@
+
+import argparse
 import gemini_api as ga
-import sys
-import os
-import sqlite3
-
-def init_db(db_path="labels.db"):
-    """Initializes the SQLite database and creates the images table if it doesn't exist."""
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS images (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            image_path TEXT UNIQUE,
-            label TEXT
-        )
-    ''')
-    conn.commit()
-    return conn
-
-def label_images(directory, model, conn):
-    """Iterates over image files in the given directory, labels those not already in the database, and stores the results."""
-    cursor = conn.cursor()
-    for filename in os.listdir(directory):
-        if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.heic')):
-            full_path = os.path.join(directory, filename)
-            # Check if this image is already labeled
-            cursor.execute("SELECT id FROM images WHERE image_path = ?", (full_path,))
-            if cursor.fetchone() is None:
-                # Call the model to label the image
-                description = model.imageQuery(full_path, "Describe what is in this image in one sentence.")
-                if description:
-                    cursor.execute(
-                        "INSERT INTO images (image_path, label) VALUES (?, ?)",
-                        (full_path, description)
-                    )
-                    conn.commit()
-                    print(f"Labeled {filename}: {description}")
-                else:
-                    print(f"Failed to label {filename}")
-            else:
-                print(f"Already labeled {filename}")
+import embeddings as emb
+from db import init_db, label_images
 
 def main():
-    model = ga.ModelApi()
-    args = sys.argv[1:]
+    parser = argparse.ArgumentParser(
+        description="Run label creation or text embedding operations."
+    )
+    parser.add_argument(
+        "--create-label",
+        action="store_true",
+        help="Create labels for images in a directory."
+    )
+    parser.add_argument(
+        "--embed-text",
+        action="store_true",
+        help="Text to embed using the Google Text Embedder API."
+    )
+    parser.add_argument(
+        "--dir",
+        type=str,
+        default="images/",
+        help="Directory containing images for label creation (default: images/)."
+    )
+    
+    args = parser.parse_args()
 
-    # Check for the "-create-label" flag
-    create_label = any(flag in args for flag in ["-create-label"])
-
-    if create_label:
-        try:
-            directory = "images/"
-        except (ValueError, IndexError):
-            print("Please provide a directory path after the -dir flag.")
-            return
-
+    if args.create_label:
+        model = ga.ModelApi()
         conn = init_db()
-        label_images(directory, model, conn)
+        label_images(args.dir, model, conn)
         conn.close()
+        print("Label creation completed.")
+    
+    elif args.embed_text:
+        embedder = emb.
+        embedding = embedder.embed(args.embed_text)
+        print("Embedding result:", embedding)
+    
     else:
-        print("No operation specified.")
+        print("No valid operation specified. Use --create-label or --embed-text.")
 
 if __name__ == "__main__":
     main()

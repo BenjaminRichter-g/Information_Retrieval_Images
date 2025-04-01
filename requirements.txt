@@ -2,3 +2,4 @@ google-genai
 python-dotenv
 pillow
 pymilvus
+
