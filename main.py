@@ -1,8 +1,8 @@
-
 import argparse
 import gemini_api as ga
 import embeddings as emb
-from db import init_db, label_images
+from db import init_db, label_images, retrieve_images
+import vector_db as vd
 
 def main():
     parser = argparse.ArgumentParser(
@@ -34,9 +34,20 @@ def main():
         conn.close()
         print("Label creation completed.")
     
-    elif args.embed_text:
-        embedder = emb.
-        embedding = embedder.embed(args.embed_text)
+    if args.embed_text:
+
+        milvus_db = vd.MilvusDb() 
+        embedder = emb.Embedder()
+
+        existing_hashes = milvus_db.get_all_md5_hashes() 
+        conn = init_db() 
+        retrieve_images(conn, existing_hashes)
+        conn.close()
+
+        exit()
+
+        embedding = embedder.batch_embeddings(text)
+
         print("Embedding result:", embedding)
     
     else:
