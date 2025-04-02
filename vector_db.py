@@ -8,7 +8,7 @@ from pymilvus import (
 )
 
 class MilvusDb:
-    def __init__(self, collection_name="image_embeddings", dim=768):
+    def __init__(self, collection_name="image_embeddings", dim=3072):
         connections.connect(uri="http://localhost:19530", token="root:Milvus")
         self.collection_name = collection_name
         self.dim = dim
@@ -26,6 +26,10 @@ class MilvusDb:
             schema = CollectionSchema(fields, description="Image embeddings with metadata")
             self.collection = Collection(collection_name, schema)
             print(f"Created new Milvus collection '{collection_name}'.")
+
+
+    def delete_entire_db(self):
+        utility.drop_collection("image_embeddings")
 
     def insert_record(self, md5, file_path, description, embedding):
         data = [
@@ -59,9 +63,10 @@ class MilvusDb:
 
 
     def get_all_md5_hashes(self):
-        if not utility.has_collection("md5"):
-            return []
-        query_results = self.collection.query(expr="1==1", output_fields=["md5"])
+
+        print(self.collection.schema)
+        self.collection.load()
+        query_results = self.collection.query(collection_name="image_embeddings", expr="1==1", output_fields=["md5"])
         md5_hashes = {record["md5"] for record in query_results if "md5" in record}
         return md5_hashes
 
