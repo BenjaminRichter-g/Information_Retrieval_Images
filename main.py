@@ -41,15 +41,28 @@ def main():
 
         existing_hashes = milvus_db.get_all_md5_hashes() 
         conn = init_db() 
-        retrieve_images(conn, existing_hashes)
-        conn.close()
 
-        exit()
-
-        embedding = embedder.batch_embeddings(text)
+        try:
+            images = retrieve_images(conn, existing_hashes)
+            conn.close()
+        except Exception as e:
+            print(e)
+            conn.close()
+            return
+        
+        descriptions = [description[:-1] for (_, _, description) in images] 
+        embedding = embedder.batch_embeddings(descriptions)
 
         print("Embedding result:", embedding)
-    
+        for index in range(len(images)):
+            milvus_db.insert_record(images[index][0], images[index][1], images[index][2], embedding[index])
+        print("inserted into milvus done")
+
+        #testing retrieval
+
+        res = milvus_db.get_all_md5_hashes()
+        print(res)
+
     else:
         print("No valid operation specified. Use --create-label or --embed-text.")
 
