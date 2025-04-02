@@ -53,9 +53,10 @@ def main():
         descriptions = [description[:-1] for (_, _, description) in images] 
         embedding = embedder.batch_embeddings(descriptions)
 
-        print("Embedding result:", embedding)
+        #print("Embedding result:", embedding)
+
         for index in range(len(images)):
-            milvus_db.insert_record(images[index][0], images[index][1], images[index][2], embedding[index])
+            milvus_db.insert_record(images[index][0], images[index][1], images[index][2], embedding[index][0].values)
         print("inserted into milvus done")
 
         #testing retrieval
