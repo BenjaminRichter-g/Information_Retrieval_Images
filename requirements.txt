@@ -1,0 +1,7 @@
+google-generativeai
+python-dotenv
+pillow
+pymilvus
+google-genai
+torchvision
+pycocotools
