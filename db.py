@@ -43,13 +43,18 @@ def label_images(directory, model, conn):
             else:
                 print(f"Already labeled {filename}")
 
+def drop_database():
 
+    if os.path.isfile("labels.db"):
+        os.remove("labels.db")
+    print("Sqlite db deleted")
 
 def retrieve_images(conn, hashes):
     """Retrieves the images in the SQL DB and checks if they already exist in Milvus, returns the non-existent ones for embedding."""
     cursor = conn.cursor()
-    
+
     placeholders = ','.join('?' for _ in hashes)
+    hashes = list(hashes)
     query = f"SELECT * FROM images WHERE md5 NOT IN ({placeholders})"
     cursor.execute(query, hashes)
     
@@ -59,7 +64,6 @@ def retrieve_images(conn, hashes):
     else:
         print(infos)
         return infos
-
 
 class ImageInformation():
 

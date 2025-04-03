@@ -1,7 +1,7 @@
 import argparse
 import gemini_api as ga
 import embeddings as emb
-from db import init_db, label_images, retrieve_images
+from db import init_db, label_images, retrieve_images, drop_database
 import vector_db as vd
 
 def main():
@@ -24,8 +24,15 @@ def main():
         default="images/",
         help="Directory containing images for label creation (default: images/)."
     )
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="Completely resets the SQL AND MILVUS database!"
+        )
     
     args = parser.parse_args()
+
+  
 
     if args.create_label:
         model = ga.ModelApi()
@@ -53,8 +60,6 @@ def main():
         descriptions = [description[:-1] for (_, _, description) in images] 
         embedding = embedder.batch_embeddings(descriptions)
 
-        #print("Embedding result:", embedding)
-
         for index in range(len(images)):
             milvus_db.insert_record(images[index][0], images[index][1], images[index][2], embedding[index][0].values)
         print("inserted into milvus done")
@@ -63,6 +68,13 @@ def main():
 
         res = milvus_db.get_all_md5_hashes()
         print(res)
+
+    if args.reset:
+        confirmation = input("Are you sure? This is not reversible and it might take a while to relabel and embed the images? Confirm with YES, anything else will be considered a no\n")
+        if confirmation.lower() == "yes":
+            drop_database()
+            milvus_db = vd.MilvusDb()
+            milvus_db.delete_entire_db()
 
     else:
         print("No valid operation specified. Use --create-label or --embed-text.")
