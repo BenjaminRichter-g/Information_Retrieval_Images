@@ -27,9 +27,25 @@ class MilvusDb:
             self.collection = Collection(collection_name, schema)
             print(f"Created new Milvus collection '{collection_name}'.")
 
+        self.create_index()
+
+
+    def create_index(self):
+        self.collection.create_index(
+                field_name="embedding",
+                index_params={
+                            "metric_type":"L2",
+                            "index_type":"IVF_FLAT",
+                            "params":{"nlist":1024}
+                            }
+                )
+
+        self.collection.load()
+
 
     def delete_entire_db(self):
         utility.drop_collection("image_embeddings")
+        print("Milvus db dropped image_embeddings collection")
 
     def insert_record(self, md5, file_path, description, embedding):
         data = [
@@ -63,10 +79,8 @@ class MilvusDb:
 
 
     def get_all_md5_hashes(self):
-
-        print(self.collection.schema)
-        self.collection.load()
-        query_results = self.collection.query(collection_name="image_embeddings", expr="1==1", output_fields=["md5"])
+        expr = "md5 != ''"  # any valid filtering on your text field
+        query_results = self.collection.query(expr=expr, output_fields=["md5"])
         md5_hashes = {record["md5"] for record in query_results if "md5" in record}
         return md5_hashes
 
