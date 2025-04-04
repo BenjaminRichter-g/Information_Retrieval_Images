@@ -4,6 +4,7 @@ import gemini_api as ga
 import embeddings as emb
 from db import init_db, label_images
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Run label creation or text embedding operations."
