@@ -50,3 +50,58 @@ for a quick description of the options
 
 the main branch is protected
 
+
+# Gemini captioning and evaluation
+This part of the project focuses on generating image captions using Google's Gemini model and evaluating them against COCO ground-truth captions using semantic similarity.
+
+Tools Used
+Gemini API (google-generativeai) for:
+Caption generation
+Text embedding (Gemini's embedding-001)
+COCO dataset
+Cosine similarity for semantic evaluation
+
+* The data/ folder is not included in this repository to keep it lightweight. To reproduce the results, you’ll need to manually download and prepare the necessary COCO data.
+
+ Step 1: Download COCO 2017 Files
+2017 Validation Images
+Download from http://images.cocodataset.org/zips/val2017.zip
+
+2017 Captions Annotations
+Download from http://images.cocodataset.org/annotations/annotations_trainval2017.zip
+
+Extract the files to structure th eproject like this:
+Information_Retrieval_Images/
+├── data/
+│   └── coco/
+│       ├── images/
+│       │   └── val2017/                   # From val2017.zip
+│       └── annotations/
+│           └── captions_val2017.json      # From annotations_trainval2017.zip
+
+
+
+output structure:
+data/
+└── coco_subset/
+    ├── images/                  # Selected COCO images
+    ├── references.json          # COCO captions
+    ├── gemini_captions.json     # Generated Gemini captions
+    └── similarity_scores.csv    # Evaluation results
+
+To run:
+1. Generate a COCO subset:
+python main.py --sample-coco
+
+will create:
+data/coco_subset/
+├── images/
+├── references.json
+├── gemini_captions.json (after generation)
+├── similarity_scores.csv (after evaluation)
+
+2. Generate Gemini captions:
+python caption_generator.py
+
+3. Run evaluation:
+python evaluate_gemini_cap.py
