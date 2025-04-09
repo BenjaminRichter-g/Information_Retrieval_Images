@@ -1,6 +1,7 @@
 import sqlite3
 import os
 from hashlib import md5
+import time
 
 def init_db(db_path="labels.db"):
     """Initializes the SQLite database and creates the images table if it doesn't exist."""
@@ -27,6 +28,7 @@ def label_images(directory, model, conn):
             if cursor.fetchone() is None:
                 # Call the model to label the image
                 description = model.imageQuery(full_path, "Describe what is in this image in one sentence.")
+                time.sleep(4)  # 4s delay to stay within ~15 requests/min
                 if description:
                     with open(full_path, 'rb') as f:
                         file_data = f.read()
