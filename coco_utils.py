@@ -4,7 +4,6 @@ import os
 import random
 import shutil
 import torchvision
-from torchvision.datasets import CocoCaptions
 """
 loads COCO captions via file thats dwnloaded manually
 
