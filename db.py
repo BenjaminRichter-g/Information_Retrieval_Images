@@ -80,3 +80,8 @@ class ImageInformation():
         return self.md5, self.path, self.description
 
 
+def get_all_labels(conn):
+    """Fetches all image paths and their labels from the DB."""
+    cursor = conn.cursor()
+    cursor.execute("SELECT image_path, label FROM images")
+    return dict(cursor.fetchall())  # returns {image_path: label}

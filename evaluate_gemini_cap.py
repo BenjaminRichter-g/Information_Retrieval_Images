@@ -11,12 +11,6 @@ Outputs a CSV with max similarity, average similarity, gemini caption
 
 Output saved in data/coco_subset/similarity_scores.csv
 """
-def get_all_labels(conn):
-    cursor = conn.cursor()
-    cursor.execute("SELECT image_path, label FROM images")
-    return dict(cursor.fetchall())  # {image_path: label}
-
-
 import os
 import json
 import csv
