@@ -1,6 +1,7 @@
 from google import genai
 from dotenv import dotenv_values
 import PIL.Image
+import numpy as np
 
 class ModelApi():
     def __init__(self):
@@ -45,5 +46,3 @@ class ModelApi():
         except Exception as e:
             print(f"Error during image processing: {e}")
             return None
-
-

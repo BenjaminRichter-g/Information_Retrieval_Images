@@ -9,6 +9,7 @@ Uses MOdelApi.imageQuesry() to generate gemini captions
 Saves generated captions to data/coco_subset/gemini_captions.json
 """
 
+
 def generate_captions_for_folder(image_dir, prompt="Describe the image."):
     model = ModelApi()
     captions = {}
