@@ -1,6 +1,7 @@
 import json
 import csv
 from embedding_utils import cosine_similarity
+from db import init_db, get_all_labels
 
 def evaluate_post_testing(gemini_path, other_model_path, reference_path, output_csv):
     """
