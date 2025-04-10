@@ -3,3 +3,4 @@ InformationRetrievalEnv
 .DS_Store
 __pycache__/
 labels.db
+data/

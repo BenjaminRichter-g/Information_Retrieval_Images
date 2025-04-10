@@ -18,8 +18,8 @@ Saves corresponding COCO captions to data/coco_subset/references.json
 
 
 
-def load_coco_dataset(root_dir="data/coco/images", 
-                      ann_file="data/coco/annotations/captions_val2017.json", 
+def load_coco_dataset(root_dir="data\\coco\\images", 
+                      ann_file="data\\coco\\annotations\\captions_val2017.json", 
                       download=True):
     dataset = CocoCaptions(root=root_dir, annFile=ann_file, download=download)
     print(f"Loaded {len(dataset)} samples from COCO.")
@@ -40,8 +40,8 @@ def sample_coco_subset(dataset, num_samples=100):
     return samples
 
 
-def save_coco_subset(samples, output_dir="data/coco_subset"):
-    os.makedirs(f"{output_dir}/images", exist_ok=True)
+def save_coco_subset(samples, output_dir="data\\coco_subset"):
+    os.makedirs(f"{output_dir}\images", exist_ok=True)
 
     references = {}
 

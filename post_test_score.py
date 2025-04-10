@@ -1,48 +1,64 @@
 import json
 import csv
+from embedding_utils import cosine_similarity
 
-"""
-Aggregates scores from the comparison results.
+def evaluate_post_testing(gemini_path, other_model_path, reference_path, output_csv):
+    """
+    Compare captions from Gemini and another model, compute cosine similarity metrics, and save results.
+    """
+    # Load captions
+    with open(gemini_path, "r") as f:
+        gemini_captions = json.load(f)
 
-Outputs a CSV file with average BLEU scores and cosine similarity.
-"""
+    with open(other_model_path, "r") as f:
+        other_model_captions = json.load(f)
 
-def aggregate_scores(comparison_path, output_csv):
-    with open(comparison_path, "r") as f:
-        comparisons = json.load(f)
+    with open(reference_path, "r") as f:
+        reference_captions = json.load(f)
 
-    total_bleu_1 = total_bleu_2 = total_bleu_3 = total_bleu_4 = total_cosine = 0
-    count = len(comparisons)
+    results = []
 
-    for result in comparisons:
-        total_bleu_1 += result["bleu_1"]
-        total_bleu_2 += result["bleu_2"]
-        total_bleu_3 += result["bleu_3"]
-        total_bleu_4 += result["bleu_4"]
-        total_cosine += result["max_cosine_similarity"]
+    for filename, gemini_caption in gemini_captions.items():
+        references = reference_captions.get(filename, [])
+        other_caption = other_model_captions.get(filename, "")
 
-    # Calculate averages
-    avg_bleu_1 = total_bleu_1 / count
-    avg_bleu_2 = total_bleu_2 / count
-    avg_bleu_3 = total_bleu_3 / count
-    avg_bleu_4 = total_bleu_4 / count
-    avg_cosine = total_cosine / count
+        if not references or not other_caption:
+            continue
+
+        # Compute cosine similarity scores for Gemini captions
+        gemini_scores = [cosine_similarity(gemini_caption, ref) for ref in references]
+        gemini_similarity_max = max(gemini_scores)
+        gemini_similarity_avg = sum(gemini_scores) / len(gemini_scores)
+
+        # Compute cosine similarity scores for the other model's captions
+        other_model_scores = [cosine_similarity(other_caption, ref) for ref in references]
+        other_model_similarity_max = max(other_model_scores)
+        other_model_similarity_avg = sum(other_model_scores) / len(other_model_scores)
+
+        # Append results
+        results.append({
+            "image": filename,
+            "gemini_caption": gemini_caption,
+            "other_model_caption": other_caption,
+            "gemini_similarity_max": round(gemini_similarity_max, 4),
+            "gemini_similarity_avg": round(gemini_similarity_avg, 4),
+            "other_model_similarity_max": round(other_model_similarity_max, 4),
+            "other_model_similarity_avg": round(other_model_similarity_avg, 4),
+        })
 
     # Save results to CSV
     with open(output_csv, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Metric", "Score"])
-        writer.writerow(["BLEU-1", round(avg_bleu_1, 4)])
-        writer.writerow(["BLEU-2", round(avg_bleu_2, 4)])
-        writer.writerow(["BLEU-3", round(avg_bleu_3, 4)])
-        writer.writerow(["BLEU-4", round(avg_bleu_4, 4)])
-        writer.writerow(["Cosine Similarity", round(avg_cosine, 4)])
+        writer = csv.DictWriter(f, fieldnames=results[0].keys())
+        writer.writeheader()
+        writer.writerows(results)
 
-    print(f"Saved aggregated scores to {output_csv}")
+    print(f"Saved post-testing evaluation results to {output_csv}")
 
 
 if __name__ == "__main__":
-    comparison_path = "data/coco_subset/post_test_comparison.json"
-    output_csv = "data/coco_subset/post_test_scores.csv"
+    gemini_path = "data/coco_subset/gemini_captions.json"
+    other_model_path = "data/coco_subset/other_model_captions.json"
+    reference_path = "data/coco_subset/references.json"
+    output_csv = "data/coco_subset/post_test_similarity_scores.csv"
 
-    aggregate_scores(comparison_path, output_csv)
+    evaluate_post_testing(gemini_path, other_model_path, reference_path, output_csv)
