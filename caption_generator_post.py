@@ -21,13 +21,22 @@ def generate_and_store_embeddings(image_dir, db_path="labels.db", output_path="d
     embedder = Embedder()
     milvus_db = vd.MilvusDb()
 
-    captions = {}  # Dictionary to store captions for saving to JSON
+    # Load existing captions from the JSON file if it exists
+    if os.path.exists(output_path):
+        with open(output_path, "r") as f:
+            captions = json.load(f)
+    else:
+        captions = {}
 
     for filename in os.listdir(image_dir):
         if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
             image_path = os.path.join(image_dir, filename)
 
             # Check if the image is already processed
+            if filename in captions:
+                print(f"Caption already exists for {filename}: {captions[filename]}")
+                continue
+
             with open(image_path, "rb") as f:
                 file_data = f.read()
                 file_hash = md5(file_data).hexdigest()
@@ -60,7 +69,7 @@ def generate_and_store_embeddings(image_dir, db_path="labels.db", output_path="d
                 # Add the caption to the JSON dictionary
                 captions[filename] = caption
             else:
-                print(f"Caption already exists for {filename}: {result[0]}")
+                print(f"Caption already exists in the database for {filename}: {result[0]}")
                 captions[filename] = result[0]  # Add existing caption to JSON
 
     # Save captions to JSON
@@ -69,7 +78,6 @@ def generate_and_store_embeddings(image_dir, db_path="labels.db", output_path="d
     print(f"Saved captions to {output_path}")
 
     conn.close()
-
 
 if __name__ == "__main__":
     # Default paths

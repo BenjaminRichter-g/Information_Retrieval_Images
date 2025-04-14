@@ -97,7 +97,7 @@ def main():
         print(res)
 
     if args.post_test:
-        # Paths for post-testing
+    # Paths for post-testing
         image_dir = args.dir
         gemini_captions_path = "data/coco_subset/references.json"
         other_model_captions_path = "data/coco_subset/other_model_captions.json"
@@ -117,6 +117,7 @@ def main():
             output_csv=output_csv_path
         )
         print(f"Post-testing evaluation completed. Results saved to {output_csv_path}.")
+        
     if args.sample_coco:
         from coco_utils import load_coco_dataset, sample_coco_subset, save_coco_subset
         dataset = load_coco_dataset()
