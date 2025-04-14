@@ -1,3 +1,4 @@
+
 """
 Loads  COCO captions from JSON file and Gemini captions from db
 
@@ -15,7 +16,6 @@ import csv
 from embedding_utils import cosine_similarity
 from db import init_db, get_all_labels, label_images
 from gemini_api import ModelApi
-
 
 prompts = [
     "Describe what is happening in this image.",

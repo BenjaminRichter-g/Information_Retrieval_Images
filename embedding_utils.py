@@ -4,11 +4,13 @@ from google import generativeai as genai
 from dotenv import load_dotenv
 import os
 import time
+
 """
 Embed any text using Gemini's embedding model
 
 Compute cosine similarity between two captions
 """
+load_dotenv()
 genai.configure(api_key=os.getenv("API_KEY"))
 model = ModelApi()
 
@@ -17,7 +19,7 @@ def embed_text(text):
         # Ensure the input is a single string
         if not isinstance(text, str):
             raise ValueError(f"Expected a single string, but got {type(text)}: {text}")
-
+        
         response = genai.embed_content(
             model="models/embedding-001",
             content=text,
@@ -33,6 +35,7 @@ def embed_text(text):
         print(f"Error generating embedding: {e}")
         return np.zeros(3072)  # Return a zero vector as a placeholder
     
+
 def cosine_similarity(text1, text2):
     emb1 = embed_text(text1)
     emb2 = embed_text(text2)
