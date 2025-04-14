@@ -48,15 +48,11 @@ class MilvusDb:
         print("Milvus db dropped image_embeddings collection")
 
     def insert_record(self, md5, file_path, description, embedding):
-        data = [
-            [md5],       
-            [file_path],  
-            [description], 
-            [embedding]   
-        ]
-        result = self.collection.insert(data)
-        self.collection.flush()  
-        print(f"Inserted record for file: {file_path} with md5: {md5}")
+        # Ensure md5 is a string
+        md5 = str(md5)
+        collection = Collection(self.collection_name)
+        data = [[md5], [file_path], [description], [embedding]]
+        result = collection.insert(data)
         return result
 
     def delete_record(self, md5):
@@ -83,4 +79,3 @@ class MilvusDb:
         query_results = self.collection.query(expr=expr, output_fields=["md5"])
         md5_hashes = {record["md5"] for record in query_results if "md5" in record}
         return md5_hashes
-

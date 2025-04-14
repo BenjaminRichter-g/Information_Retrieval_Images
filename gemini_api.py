@@ -1,6 +1,9 @@
 from google import genai
 from dotenv import dotenv_values
 import PIL.Image
+import numpy as np
+import time
+import google.api_core.exceptions
 
 class ModelApi():
     def __init__(self):
@@ -42,8 +45,20 @@ class ModelApi():
             )
             print(response.text)
             return response.text
+        
+        except google.api_core.exceptions.ResourceExhausted as e:
+            print("⛔ Rate limit hit (429). Try again later.")
+            return None
+        
+        except google.api_core.exceptions.ServiceUnavailable as e:
+            print("🚫 Model is overloaded (503), retrying in 10s...")
+            time.sleep(10)
+            return self.imageQuery(image_path, prompt)  # retry once
+        
+        except Exception as e:
+            print(f"❌ Error during image processing: {e}")
+            return None
         except Exception as e:
             print(f"Error during image processing: {e}")
+        
             return None
-
-

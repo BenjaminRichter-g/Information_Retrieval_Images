@@ -66,7 +66,7 @@ wait_for_milvus_running() {
     echo "Wait for Milvus Starting..."
     while true
     do
-        res=`docker ps|grep milvus-standalone|grep healthy|wc -l`
+        res=`sudo docker ps|grep milvus-standalone|grep healthy|wc -l`
         if [ $res -eq 1 ]
         then
             echo "Start successfully."
@@ -78,7 +78,7 @@ wait_for_milvus_running() {
 }
 
 start() {
-    res=`docker ps|grep milvus-standalone|grep healthy|wc -l`
+    res=`sudo docker ps|grep milvus-standalone|grep healthy|wc -l`
     if [ $res -eq 1 ]
     then
         echo "Milvus is running."
