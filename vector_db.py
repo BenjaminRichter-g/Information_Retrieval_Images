@@ -21,7 +21,7 @@ class MilvusDb:
                 FieldSchema(name="md5", dtype=DataType.VARCHAR, max_length=32, is_primary=True, auto_id=False),
                 FieldSchema(name="file_path", dtype=DataType.VARCHAR, max_length=256),
                 FieldSchema(name="description", dtype=DataType.VARCHAR, max_length=512),
-                FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=dim)
+                FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=3072)
             ]
             schema = CollectionSchema(fields, description="Image embeddings with metadata")
             self.collection = Collection(collection_name, schema)

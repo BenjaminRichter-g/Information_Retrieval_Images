@@ -34,7 +34,7 @@ def evaluate_post_testing(gemini_path, other_model_path, reference_path, output_
 
     for filename, gemini_caption in gemini_captions.items():
         references = reference_captions.get(filename, [])
-        other_caption = other_model_captions.get(filename, "")
+        other_caption = other_model_captions.get(filename, "")  # Use the single caption
 
         if not references or not other_caption:
             print(f"Skipping {filename}: Missing references or Hugging Face caption.")
@@ -43,6 +43,7 @@ def evaluate_post_testing(gemini_path, other_model_path, reference_path, output_
         print(f"Processing {filename}:")
         print(f"Gemini caption: {gemini_caption}")
         print(f"References: {references}")
+        print(f"Hugging Face caption: {other_caption}")
 
         # Combine multiple captions into a single string
         gemini_caption = " ".join(gemini_caption) if isinstance(gemini_caption, list) else gemini_caption
