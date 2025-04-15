@@ -105,3 +105,13 @@ python caption_generator.py
 
 3. Run evaluation:
 python evaluate_gemini_cap.py
+
+
+To run the app:
+
+navigate to the directory which has server.py in and in the command line execute:
+uvicorn server:app --reload
+
+then navigate into the frontend directory and install everything and then run it:
+npm install
+npm start

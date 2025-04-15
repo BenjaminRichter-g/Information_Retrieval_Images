@@ -1,5 +1,4 @@
 # server.py
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -18,7 +17,6 @@ app = FastAPI()
 # Enable CORS
 origins = [
     "http://localhost:3000",
-    # Add other front-end URLs if needed
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -153,4 +151,3 @@ def search_endpoint(request: SearchRequest):
         return {"results": output}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-# -------------------- Run the server bruvvvvv --------------------
