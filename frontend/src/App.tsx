@@ -1,14 +1,16 @@
-// src/App.tsx
 import React from 'react';
 import Search from './components/Search';
+import './App.css';
 
 function App() {
   return (
-    <div className="App">
-      <header className="bg-gray-800 text-white p-4">
-        <h1 className="text-xl font-bold">AI-Powered Image Search</h1>
+    <div className="app">
+      <header className="app-header">
+        <div className="container">
+          <h1 className="app-title">AI-Powered Image Search</h1>
+        </div>
       </header>
-      <main className="p-4">
+      <main className="container app-main">
         <Search />
       </main>
     </div>
