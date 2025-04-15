@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+// import React, { useState } from 'react';
 
 interface SearchResult {
   md5: string;
-  file_path: string;
+  file_path: string;  
   description: string;
   distance: number;
 }
@@ -54,13 +54,15 @@ const Search: React.FC = () => {
           Search
         </button>
       </form>
+
       {loading && <p className="search-loading">Loading...</p>}
       {error && <p className="search-error">{error}</p>}
+
       <div className="results-grid">
         {results.map((result) => (
           <div key={result.md5} className="result-card">
             <img
-              src={result.file_path}
+              src={result.file_path}  // A full URL, e.g. http://localhost:8000/data/...jpg
               alt={result.description}
               className="result-image"
               onError={(e) => {
@@ -69,7 +71,9 @@ const Search: React.FC = () => {
             />
             <div className="result-info">
               <p className="result-description">{result.description}</p>
-              <p className="result-distance">Distance: {result.distance.toFixed(2)}</p>
+              <p className="result-distance">
+                Distance: {result.distance.toFixed(2)}
+              </p>
             </div>
           </div>
         ))}
