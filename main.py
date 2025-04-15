@@ -21,7 +21,7 @@ def main():
     parser.add_argument(
         "--dir",
         type=str,
-        default="images/",
+        default="data/coco_validation_2017/val2017",
         help="Directory containing images for label creation (default: images/)."
     )
     parser.add_argument(
@@ -39,11 +39,11 @@ def main():
     args = parser.parse_args()
 
   
-
+    prompt = "Generate a short, realistic caption like those in the MS-COCO dataset."
     if args.create_label:
         model = ga.ModelApi()
         conn = init_db()
-        label_images(args.dir, model, conn)
+        label_images(args.dir, model, conn, prompt)
         conn.close()
         print("Label creation completed.")
 
