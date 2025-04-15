@@ -1,8 +1,9 @@
 import argparse
 import gemini_api as ga
 import embeddings as emb
-from db import init_db, label_images, retrieve_images, drop_database
+from db import init_db, label_images, retrieve_images, drop_database, retrieve_all_images
 import vector_db as vd
+import time
 
 def main():
     parser = argparse.ArgumentParser(
@@ -35,7 +36,12 @@ def main():
         action="store_true",
         help = "download and sample a subset of coco images and captions"
     )
-    
+
+    parser.add_argument(
+            "--show-db",
+            action="store_true",
+            help = "uniquely for testing, shows what the db contains"
+    )  
     args = parser.parse_args()
 
   
@@ -54,6 +60,10 @@ def main():
         save_coco_subset(samples)
         return
 
+    if args.show_db:
+        conn = init_db()
+        retrieve_all_images(conn)
+
     if args.embed_text:
 
         milvus_db = vd.MilvusDb() 
@@ -69,12 +79,20 @@ def main():
             print(e)
             conn.close()
             return
-        
-        descriptions = [description[:-1] for (_, _, description) in images] 
-        embedding = embedder.batch_embeddings(descriptions)
 
+        nb_images = len(images)
+        nb_done = 0
         for index in range(len(images)):
-            milvus_db.insert_record(images[index][0], images[index][1], images[index][2], embedding[index][0].values)
+            print(f"Finished the {nb_done} out of {nb_images}")
+            print(f"Embeded caption: {images[index][3]}")
+            nb_done+=1
+            try:
+                time.sleep(4)
+                embedding = embedder.get_embedding(images[index][3])
+                milvus_db.insert_record(images[index][0], images[index][1], images[index][2], embedding[0].values)
+            except Exception as e:
+                time.sleep(1)
+                print(e)
         print("inserted into milvus done")
 
         #testing retrieval

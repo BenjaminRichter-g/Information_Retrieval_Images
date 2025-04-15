@@ -79,6 +79,19 @@ def retrieve_images(conn, hashes):
     else:
         return infos
 
+def retrieve_all_images(conn):
+    """Retrieves the images in the SQL DB"""
+    cursor = conn.cursor()
+
+    query = f"SELECT * FROM images"
+    cursor.execute(query)
+    
+    infos = cursor.fetchall()
+    if not infos:
+        raise Exception("No images to label")
+    else:
+        return infos
+
 class ImageInformation():
 
     def __init__(self, md5, path, description):
