@@ -8,7 +8,7 @@ def init_db(db_path="labels.db"):
     """Initializes the SQLite database and creates the images table if it doesn't exist."""
        
     db_path = os.path.abspath(db_path)  # Make path absolute
-    print(f"🔍 Initializing DB at: {db_path}")  # 👈 Add this line
+    print(f"🔍 Initializing DB at: {db_path}")
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -24,10 +24,15 @@ def init_db(db_path="labels.db"):
     conn.commit()
     return conn
 
-def label_images(directory, model, conn,prompt):
+def label_images(directory, model, conn, prompt):
     """Iterates over image files in the given directory, labels those not already in the database, and stores the results."""
     cursor = conn.cursor()
+
+    nb_files = len([name for name in os.listdir(directory)])
+    files_processed = 0
     for filename in os.listdir(directory):
+        print(f"Handling file {files_processed} out of {nb_files}")
+        files_processed+=1
         if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.heic')):
             full_path = os.path.join(directory, filename)
             # Check if this image is already labeled with the given prompt
@@ -36,7 +41,6 @@ def label_images(directory, model, conn,prompt):
             if cursor.fetchone() is None:
                 # Call the model to label the image
                 description = model.imageQuery(full_path, prompt)
-                time.sleep(4)  # 4s delay to stay within ~15 requests/min
                 if description:
                     with open(full_path, 'rb') as f:
                         file_data = f.read()
@@ -73,7 +77,6 @@ def retrieve_images(conn, hashes):
     if not infos:
         raise Exception("No images to label")
     else:
-        print(infos)
         return infos
 
 class ImageInformation():
