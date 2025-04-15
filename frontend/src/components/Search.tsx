@@ -1,4 +1,3 @@
-// src/Search.tsx
 import React, { useState } from 'react';
 
 interface SearchResult {
@@ -42,36 +41,36 @@ const Search: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <form onSubmit={handleSearch} className="mb-4">
+    <div className="search-container">
+      <form onSubmit={handleSearch} className="search-form">
         <input
           type="text"
           placeholder="Enter search query"
+          className="search-input"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="border border-gray-300 rounded px-4 py-2 w-full"
         />
-        <button
-          type="submit"
-          className="bg-blue-500 text-white rounded px-4 py-2 mt-2 hover:bg-blue-600"
-        >
+        <button type="submit" className="search-button">
           Search
         </button>
       </form>
-      {loading && <p>Loading...</p>}
-      {error && <p className="text-red-500">{error}</p>}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {loading && <p className="search-loading">Loading...</p>}
+      {error && <p className="search-error">{error}</p>}
+      <div className="results-grid">
         {results.map((result) => (
-          <div key={result.md5} className="border p-4 rounded shadow">
+          <div key={result.md5} className="result-card">
             <img
               src={result.file_path}
               alt={result.description}
-              className="w-full h-48 object-cover mb-2"
+              className="result-image"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150';
+              }}
             />
-            <p>{result.description}</p>
-            <p className="text-sm text-gray-500">
-              Distance: {result.distance.toFixed(2)}
-            </p>
+            <div className="result-info">
+              <p className="result-description">{result.description}</p>
+              <p className="result-distance">Distance: {result.distance.toFixed(2)}</p>
+            </div>
           </div>
         ))}
       </div>
