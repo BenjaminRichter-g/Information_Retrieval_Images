@@ -1,6 +1,7 @@
-# server.py
+# server.py  :contentReference[oaicite:0]{index=0}
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles  # <-- NEW
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -26,13 +27,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -------------------- Pydantic models --------------------
 
+app.mount(
+    "/data",  # URL prefix
+    StaticFiles(directory="data"),  # local folder to serve
+    name="data"
+)
+# ---------------------------------------------------------------------
+
+# -------------------- Pydantic models --------------------
 class LabelRequest(BaseModel):
     directory: str  # the folder in which images are stored
 
 class EmbedRequest(BaseModel):
-    # optionally add fields you need from the front-end, e.g. which images, or an entire text?
     pass
 
 class ResetRequest(BaseModel):
@@ -43,7 +50,6 @@ class SearchRequest(BaseModel):
     limit: Optional[int] = 10
 
 # -------------------- Endpoints --------------------
-
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the FastAPI backend!"}
@@ -61,7 +67,8 @@ def label_images_endpoint(request: LabelRequest):
     model = ga.ModelApi()
     conn = init_db()
     try:
-        label_images(directory, model, conn)
+        # Provide a default prompt or pass one in if you like
+        label_images(directory, model, conn, prompt="Describe what is in this image.")
     finally:
         conn.close()
 
@@ -80,21 +87,27 @@ def embed_text_endpoint(request: EmbedRequest):
         existing_hashes = milvus_db.get_all_md5_hashes() 
         conn = init_db()
 
+        # Each row is (md5, file_path, prompt, label)
         images = retrieve_images(conn, existing_hashes)
         conn.close()
 
-        # The "batch_embeddings" method is used for the images' textual descriptions
-        descriptions = [description[:-1] for (_, _, description) in images] 
-        # We embed each description
-        embedding = embedder.batch_embeddings(descriptions)
+        # We'll embed the label field
+        descriptions = [row[3] for row in images]
 
-        # Insert each embedding into Milvus
+        # Batch embed
+        embeddings = embedder.batch_embeddings(descriptions)
+
         for index in range(len(images)):
+            md5_val = images[index][0]
+            file_path = images[index][1]
+            label = images[index][3]
+            vector_values = embeddings[index][0].values  # pick out the float vector
+
             milvus_db.insert_record(
-                images[index][0],  # md5
-                images[index][1],  # file_path
-                images[index][2],  # description
-                embedding[index][0].values  # the actual embedding vector
+                md5_val,
+                file_path,
+                label,
+                vector_values
             )
         
         return {"message": "Insertion into Milvus done."}
@@ -122,6 +135,8 @@ def search_endpoint(request: SearchRequest):
     """
     Searches the Milvus vector DB given a textual query by generating an embedding
     of the query and performing a vector similarity search.
+    Returns image URLs that point to the static directory, so the frontend
+    can render the images via <img src="...">.
     """
     # 1. embed the query
     embedder = emb.Embedder()
@@ -136,18 +151,26 @@ def search_endpoint(request: SearchRequest):
     try:
         milvus_db = vd.MilvusDb()
         results = milvus_db.search_by_embedding(query_embedding, limit=request.limit)
+        
         # Format results for the front-end
         output = []
         for result in results:
-            # result is typically a list of hits; each 'hit' has .ids, .distance, .entity
             for hit in result:
-                # entity will contain fields from the output_fields (md5, file_path, description)
+                local_path = hit.entity.get("file_path", "")
+                if not local_path:
+                    continue
+
+                # Construct a serving URL
+                # e.g. "http://localhost:8000/data/coco_validation_2017/val2017/..."
+                image_url = f"http://localhost:8000/{local_path}"
+
                 output.append({
                     "md5": hit.entity.get("md5", ""),
-                    "file_path": hit.entity.get("file_path", ""),
+                    "file_path": image_url,  # <-- now a fully-qualified URL
                     "description": hit.entity.get("description", ""),
                     "distance": hit.distance
                 })
         return {"results": output}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
