@@ -1,42 +1,45 @@
 import numpy as np
-from gemini_api import ModelApi
-from google import generativeai as genai
-from dotenv import load_dotenv
-import os
-import time
-"""
-Embed any text using Gemini's embedding model
+import sqlite3
 
-Compute cosine similarity between two captions
-"""
-genai.configure(api_key=os.getenv("API_KEY"))
-model = ModelApi()
+from google import genai
+from dotenv import dotenv_values
+import numpy as np
 
-def embed_text(text):
-    try:
-        # Ensure the input is a single string
-        if not isinstance(text, str):
-            raise ValueError(f"Expected a single string, but got {type(text)}: {text}")
+# Initialize the GenAI client
+config = dotenv_values(".env")
+client = genai.Client(api_key=config.get("API_KEY"))
 
-        response = genai.embed_content(
-            model="models/embedding-001",
-            content=text,
-            task_type="retrieval_document"
-        )
-        embedding = np.array(response["embedding"])
-        print(f"Generated embedding for text: {text[:50]}... -> {embedding[:5]}")  # Debug print
+def embed_text(text, conn):
+    """Generates or retrieves an embedding for a given text."""
+    cursor = conn.cursor()
 
-        # Add a delay to avoid exceeding the quota
-        time.sleep(5)  # Adjust the delay as needed (e.g., 0.5 seconds for ~120 requests per minute)
-        return embedding
-    except Exception as e:
-        print(f"Error generating embedding: {e}")
-        return np.zeros(3072)  # Return a zero vector as a placeholder
-    
-def cosine_similarity(text1, text2):
-    emb1 = embed_text(text1)
-    emb2 = embed_text(text2)
-    print(f"emb1: {emb1[:5] if emb1 is not None else None}, emb2: {emb2[:5] if emb2 is not None else None}")  # Debug print
-    if emb1 is None or emb2 is None:
+    # Check if the embedding already exists
+    cursor.execute("SELECT gemini_embedding FROM embeddings WHERE md5 = ?", (text,))
+    result = cursor.fetchone()
+    if result:
+        print(f"Using cached embedding for text: {text[:50]}...")
+        return np.frombuffer(result[0], dtype=np.float32)
+
+    # Generate a new embedding using Google GenAI
+    response = client.models.embed_content(
+        model="gemini-embedding-exp-03-07",
+        contents=text
+    )
+    embedding = np.array(response.embeddings[0], dtype=np.float32)
+    embedding_bytes = embedding.tobytes()
+
+    # Save the embedding to the database
+    cursor.execute("""
+        INSERT INTO embeddings (md5, gemini_embedding)
+        VALUES (?, ?)
+    """, (text, embedding_bytes))
+    conn.commit()
+
+    return embedding
+
+
+def cosine_similarity(embedding1, embedding2):
+    """Computes cosine similarity between two embeddings."""
+    if embedding1 is None or embedding2 is None:
         return 0.0
-    return float(np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2)))
+    return float(np.dot(embedding1, embedding2) / (np.linalg.norm(embedding1) * np.linalg.norm(embedding2)))

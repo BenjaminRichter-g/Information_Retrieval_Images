@@ -1,53 +1,69 @@
 import json
 import csv
-from embedding_utils import cosine_similarity
-#errro needs t be handled
-"""
-Loads Gemini and COCO captions from JSON files
+from embedding_utils import cosine_similarity, embed_text
+import numpy as np
+import sqlite3
 
-Computes cosine similarity for each image
+def evaluate_captions(conn, output_csv):
+    """Evaluates captions by comparing Gemini captions with reference captions."""
+    cursor = conn.cursor()
 
-Outputs a CSV with max similarity, average similarity, gemini caption
- 
-Output saved in data/coco_subset/similarity_scores.csv
-"""
-
-def evaluate_captions(gemini_path, reference_path, output_csv):
-    with open(gemini_path, "r") as f:
-        gemini_captions = json.load(f)
-
-    with open(reference_path, "r") as f:
-        reference_captions = json.load(f)
+    # Fetch all Gemini captions and their corresponding references
+    cursor.execute("""
+        SELECT images.md5, captions.gemini_caption, images.label
+        FROM captions
+        INNER JOIN images ON captions.md5 = images.md5
+    """)
+    rows = cursor.fetchall()
 
     results = []
 
-    for filename, gemini_caption in gemini_captions.items():
-        references = reference_captions.get(filename, [])
-        if not references:
+    for md5, gemini_caption, reference_caption in rows:
+        if not gemini_caption or not reference_caption:
+            print(f"Skipping {md5}: Missing captions.")
             continue
 
-        scores = [cosine_similarity(gemini_caption, ref) for ref in references]
-        max_score = max(scores)
-        avg_score = sum(scores) / len(scores)
+        # Ensure inputs are strings
+        if not isinstance(gemini_caption, str) or not isinstance(reference_caption, str):
+            print(f"Invalid captions for {md5}: Gemini - {gemini_caption}, Reference - {reference_caption}")
+            continue
+
+        # Generate embeddings for captions
+        gemini_embedding = embed_text(gemini_caption)
+        reference_embedding = embed_text(reference_caption)
+
+        if gemini_embedding is None or np.all(gemini_embedding == 0):
+            print(f"Skipping invalid Gemini embedding for {md5}.")
+            continue
+        if reference_embedding is None or np.all(reference_embedding == 0):
+            print(f"Skipping invalid Reference embedding for {md5}.")
+            continue
+
+        # Calculate similarity scores
+        similarity_score = cosine_similarity(gemini_embedding, reference_embedding)
 
         results.append({
-            "image": filename,
-            "similarity_max": round(max_score, 4),
-            "similarity_avg": round(avg_score, 4),
-            "gemini_caption": gemini_caption
+            "md5": md5,
+            "gemini_caption": gemini_caption,
+            "reference_caption": reference_caption,
+            "similarity_score": round(similarity_score, 4)
         })
 
-    with open(output_csv, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=results[0].keys())
-        writer.writeheader()
-        writer.writerows(results)
-
-    print(f"Saved evaluation results to {output_csv}")
+    # Save results to CSV
+    if results:
+        with open(output_csv, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=results[0].keys())
+            writer.writeheader()
+            writer.writerows(results)
+        print(f"Saved evaluation results to {output_csv}")
+    else:
+        print("No valid results to save.")
 
 
 if __name__ == "__main__":
+    conn = sqlite3.connect("labels.db")
     evaluate_captions(
-        gemini_path="data/coco_subset/gemini_captions.json",
-        reference_path="data/coco_subset/references.json",
+        conn=conn,
         output_csv="data/coco_subset/similarity_scores.csv"
     )
+    conn.close()

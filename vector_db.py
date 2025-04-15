@@ -6,6 +6,7 @@ from pymilvus import (
     DataType,
     Collection
 )
+import numpy as np
 
 class MilvusDb:
     def __init__(self, collection_name="image_embeddings", dim=3072):
@@ -29,30 +30,25 @@ class MilvusDb:
 
         self.create_index()
 
-
     def create_index(self):
         self.collection.create_index(
-                field_name="embedding",
-                index_params={
-                            "metric_type":"L2",
-                            "index_type":"IVF_FLAT",
-                            "params":{"nlist":1024}
-                            }
-                )
-
+            field_name="embedding",
+            index_params={
+                "metric_type": "L2",
+                "index_type": "IVF_FLAT",
+                "params": {"nlist": 1024}
+            }
+        )
         self.collection.load()
 
-
-    def delete_entire_db(self):
-        utility.drop_collection("image_embeddings")
-        print("Milvus db dropped image_embeddings collection")
-
     def insert_record(self, md5, file_path, description, embedding):
-        # Ensure md5 is a string
-        md5 = str(md5)
-        collection = Collection(self.collection_name)
+        if not isinstance(embedding, (list, np.ndarray)) or len(embedding) != self.dim:
+            print(f"Invalid embedding for {file_path}. Skipping insertion.")
+            return
+        if isinstance(embedding, np.ndarray):
+            embedding = embedding.tolist()  # Convert NumPy array to list
         data = [[md5], [file_path], [description], [embedding]]
-        result = collection.insert(data)
+        result = self.collection.insert(data)
         return result
 
     def delete_record(self, md5):
@@ -72,7 +68,6 @@ class MilvusDb:
             output_fields=["md5", "file_path", "description"]
         )
         return results
-
 
     def get_all_md5_hashes(self):
         expr = "md5 != ''"  # any valid filtering on your text field

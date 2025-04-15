@@ -3,7 +3,7 @@ import os
 import json
 from hashlib import md5
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
-from db import init_db, save_caption_and_metrics
+from db import init_db
 from MAP import calculate_map
 from transformers import VisionEncoderDecoderModel, ViTImageProcessor, AutoTokenizer
 
@@ -27,7 +27,7 @@ def calculate_precision_recall(generated_caption, reference_captions):
     return precision, recall, f1_score
 
 
-def generate_captions(image_dir, output_path="data/coco_subset/other_model_captions.json", prompt="Write a COCO-style caption for this image.", reference_captions_path="data/coco_subset/references.json"):
+def generate_captions(image_dir, output_path="data/coco_subset/other_model_captions.json", prompt="Generate a short, realistic caption like those in the MS-COCO dataset", reference_captions_path="data/coco_subset/references.json"):
     """
     Generate captions using the pre-trained ViT-GPT2 model and save them to a JSON file and database.
     """
@@ -85,7 +85,17 @@ def generate_captions(image_dir, output_path="data/coco_subset/other_model_capti
                 captions[filename] = caption
 
                 # Save the results to the database
-                save_caption_and_metrics(conn, md5_hash, image_path, caption, prompt, precision, recall, f1_score)
+                cursor.execute("""
+                    INSERT OR REPLACE INTO captions (md5, gemini_caption, huggingface_caption)
+                    VALUES (?, ?, ?)
+                """, (md5_hash, caption, None))  # Hugging Face caption is None for now
+
+                cursor.execute("""
+                    INSERT OR REPLACE INTO images (md5, image_path, prompt, label)
+                    VALUES (?, ?, ?, ?)
+                """, (md5_hash, image_path, prompt, caption))
+
+                conn.commit()
             except Exception as e:
                 print(f"Failed to generate caption for {filename}: {e}")
                 captions[filename] = "No caption generated"
