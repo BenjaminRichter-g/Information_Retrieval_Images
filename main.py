@@ -53,11 +53,20 @@ def main():
         action="store_true",
         help="Search for the top-k most similar embeddings based on a query prompt."
     )
+
     parser.add_argument(
         "--migrate-db",
         action="store_true",
         help="Run database migration to ensure the schema is up to date."
     )
+
+    
+    parser.add_argument(
+        "--sample-coco",
+        action="store_true",
+        help = "download and sample a subset of coco images and captions"
+    )
+    
 
     args = parser.parse_args()
 
@@ -133,6 +142,14 @@ def main():
 
         conn.close()
         print("Label creation completed.")    
+
+    if args.sample_coco:
+        from coco_utils import load_coco_dataset, sample_coco_subset,save_coco_subset
+        dataset = load_coco_dataset()
+        samples = sample_coco_subset(dataset,num_samples=100)
+        save_coco_subset(samples)
+        return
+
 
     if args.embed_text:
         milvus_db = vd.MilvusDb()

@@ -1,20 +1,50 @@
+
+"""
+Loads  COCO captions from JSON file and Gemini captions from db
+
+if image is not in db, label it with gemini and add to db
+
+Computes cosine similarity for each image
+
+Outputs a CSV with max similarity, average similarity, gemini caption
+
+Output saved in data/coco_subset/similarity_scores.csv
+"""
+import os
 import json
 import csv
 from embedding_utils import cosine_similarity, embed_text
 import numpy as np
 import sqlite3
 
-def evaluate_captions(conn, output_csv):
-    """Evaluates captions by comparing Gemini captions with reference captions."""
-    cursor = conn.cursor()
+prompts = [
+    "Describe what is happening in this image.",
+    "List the main objects visible in this image.",
+    "Write a short sentence about the scene in this image.",
+    "Write a COCO-style caption for this image.",
+    "What are the people or animals doing in this image?",
+    "Generate a short, realistic caption like those in the MS-COCO dataset.",
+    "Write a caption that describes the main activity in this photo.",
+]
 
-    # Fetch all Gemini captions and their corresponding references
-    cursor.execute("""
-        SELECT images.md5, captions.gemini_caption, images.label
-        FROM captions
-        INNER JOIN images ON captions.md5 = images.md5
-    """)
-    rows = cursor.fetchall()
+def evaluate_captions(image_dir, reference_path, output_csv,prompt):
+    # Connect to DB and initialize model
+    conn = init_db("labels.db")
+    model = ModelApi()
+
+    # Label any new images not in the DB
+    label_images(image_dir, model, conn,prompt)
+
+    # Load Gemini captions from DB
+    gemini_captions_raw = get_all_labels(conn,prompt)
+    gemini_captions = {
+        os.path.basename(path): caption
+        for path, caption in gemini_captions_raw.items()
+    }
+
+    # Load COCO reference captions
+    with open(reference_path, "r") as f:
+        reference_captions = json.load(f)
 
     results = []
 

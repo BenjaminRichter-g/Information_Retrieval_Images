@@ -1,3 +1,4 @@
+
 import sqlite3
 import os
 from hashlib import md5
@@ -14,10 +15,19 @@ def init_db(db_path="labels_raghav.db"):
 
     # Create the images table
     cursor.execute("""
+
         CREATE TABLE IF NOT EXISTS tests (
             md5 TEXT PRIMARY KEY,
             image_path TEXT NOT NULL,
             prompt TEXT NOT NULL
+
+        CREATE TABLE IF NOT EXISTS images (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            md5 TEXT,
+            image_path TEXT,
+            label TEXT,
+            prompt TEXT,
+            UNIQUE(md5)  
         )
     """)
 
@@ -53,6 +63,40 @@ def init_db(db_path="labels_raghav.db"):
 
     conn.commit()
     return conn
+
+
+def migrate_db(db_path="labels.db"):
+    """ 
+    Migrates the existing data to the new schema to prvent the relabeling of images
+    """
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # Create a new table with the updated schema
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS images_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            md5 TEXT,
+            image_path TEXT,
+            label TEXT,
+            prompt TEXT,
+            UNIQUE(md5, prompt)
+        )
+    """)
+
+    # Copy data from the old table to the new table
+    cursor.execute("""
+        INSERT OR IGNORE INTO images_new (md5, image_path, label, prompt)
+        SELECT md5, image_path, label, prompt FROM images
+    """)
+
+    # Drop the old table and rename the new table
+    cursor.execute("DROP TABLE images")
+    cursor.execute("ALTER TABLE images_new RENAME TO images")
+
+    conn.commit()
+    conn.close()
+    print("Database migration completed.")
 
 
 def label_images(directory, model, conn,prompt):
