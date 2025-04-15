@@ -4,24 +4,23 @@ from hashlib import md5
 import time
 
 def init_db(db_path="labels.db"):
-    """Initializes the SQLite database and creates the images table if it doesn't exist."""
+    """Initializes the SQLite database and creates the captions table if it doesn't exist."""
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    # Create the images table with a UNIQUE constraint on (md5, prompt)
+    # Create the captions table if it doesn't exist
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS images (
+        CREATE TABLE IF NOT EXISTS captions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            md5 TEXT,
-            image_path TEXT,
-            label TEXT,
-            prompt TEXT,
-            UNIQUE(md5)  -- Ensure md5 and prompt combination is unique
+            filename TEXT NOT NULL,
+            caption TEXT NOT NULL,
+            precision REAL,
+            recall REAL,
+            f1_score REAL
         )
     """)
     conn.commit()
     return conn
-
 
 def migrate_db(db_path="labels.db"):
     conn = sqlite3.connect(db_path)
@@ -35,6 +34,9 @@ def migrate_db(db_path="labels.db"):
             image_path TEXT,
             label TEXT,
             prompt TEXT,
+            precision REAL,
+            recall REAL,
+            f1_score REAL,
             UNIQUE(md5, prompt)
         )
     """)
@@ -85,6 +87,17 @@ def label_images(directory, model, conn,prompt):
                     print(f"Failed to label {filename}")
             else:
                 print(f"Already labeled {filename}")
+
+def save_caption_and_metrics(conn, md5, image_path, caption, prompt, precision, recall, f1_score):
+    """
+    Saves the generated caption and its evaluation metrics to the database.
+    """
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT OR REPLACE INTO images (md5, image_path, label, prompt, precision, recall, f1_score)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (md5, image_path, caption, prompt, precision, recall, f1_score))
+    conn.commit()
 
 def drop_database():
 

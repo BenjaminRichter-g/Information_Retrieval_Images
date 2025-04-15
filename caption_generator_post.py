@@ -1,8 +1,12 @@
-from transformers import VisionEncoderDecoderModel, ViTImageProcessor, AutoTokenizer
 from PIL import Image
 import os
 import json
+from hashlib import md5
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
+from db import init_db, save_caption_and_metrics
+from MAP import calculate_map
+from transformers import VisionEncoderDecoderModel, ViTImageProcessor, AutoTokenizer
+
 
 def calculate_precision_recall(generated_caption, reference_captions):
     """
@@ -22,14 +26,19 @@ def calculate_precision_recall(generated_caption, reference_captions):
 
     return precision, recall, f1_score
 
+
 def generate_captions(image_dir, output_path="data/coco_subset/other_model_captions.json", prompt="Write a COCO-style caption for this image.", reference_captions_path="data/coco_subset/references.json"):
     """
-    Generate captions using the ViT-GPT2 model and save them to a JSON file.
+    Generate captions using the pre-trained ViT-GPT2 model and save them to a JSON file and database.
     """
     # Load the pre-trained ViT-GPT2 model and tokenizer
     model = VisionEncoderDecoderModel.from_pretrained("ydshieh/vit-gpt2-coco-en")
     processor = ViTImageProcessor.from_pretrained("ydshieh/vit-gpt2-coco-en")
     tokenizer = AutoTokenizer.from_pretrained("ydshieh/vit-gpt2-coco-en")
+
+    # Initialize the database
+    conn = init_db("labels.db")
+    cursor = conn.cursor()
 
     # Load reference captions
     with open(reference_captions_path, "r") as f:
@@ -58,6 +67,10 @@ def generate_captions(image_dir, output_path="data/coco_subset/other_model_capti
                 output_ids = model.generate(inputs.pixel_values)
                 caption = tokenizer.decode(output_ids[0], skip_special_tokens=True)
 
+                # Calculate MD5 hash for the image file
+                with open(image_path, "rb") as f:
+                    md5_hash = md5(f.read()).hexdigest()
+
                 # Get reference captions for the image
                 references = reference_captions.get(filename, [])
 
@@ -70,6 +83,9 @@ def generate_captions(image_dir, output_path="data/coco_subset/other_model_capti
 
                 # Add the caption to the JSON dictionary
                 captions[filename] = caption
+
+                # Save the results to the database
+                save_caption_and_metrics(conn, md5_hash, image_path, caption, prompt, precision, recall, f1_score)
             except Exception as e:
                 print(f"Failed to generate caption for {filename}: {e}")
                 captions[filename] = "No caption generated"
@@ -79,7 +95,15 @@ def generate_captions(image_dir, output_path="data/coco_subset/other_model_capti
         json.dump(captions, f, indent=2)
     print(f"Saved captions to {output_path}")
 
+    # Calculate MAP
+    map_score = calculate_map(captions, reference_captions)
+    print(f"Mean Average Precision (MAP): {map_score:.4f}")
+
+    conn.close()
+
+
 if __name__ == "__main__":
+    # Generate captions using the pre-trained model
     image_dir = "data/coco_subset/images"
     output_path = "data/coco_subset/ViT_GPT2_captions.json"
     prompt = "Write a COCO-style caption for this image."
