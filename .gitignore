@@ -4,3 +4,7 @@ InformationRetrievalEnv
 __pycache__/
 labels.db
 data/
+docker/volumes
+docker/user.yaml;C
+docker/embedEtcd.yaml;C
+docker/user.yaml
