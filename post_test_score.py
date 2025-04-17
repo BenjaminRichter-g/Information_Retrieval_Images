@@ -44,8 +44,16 @@ def evaluate_top_n_similarity(embeddings, output_csv="results/similarity_scores_
         hf_n_results = vector_db.search_by_embedding(embeddings[index][1], limit=top_n)
 
         # Ensure results are valid before accessing
-        gemini_md5s = [result[0] for result in gemini_n_results if len(result) > 0]
-        hf_md5 = [result[0] for result in hf_n_results if len(result) > 0]
+        gemini_md5s = [
+            hit.entity.get("md5")
+            for result in gemini_n_results  # each result is a Hits object
+            for hit    in result            # each hit is a Hit object
+        ]
+        hf_md5 = [
+            hit.entity.get("md5")
+            for result in hf_n_results  # each result is a Hits object
+            for hit    in result            # each hit is a Hit object
+        ]
 
         common_returns = 0
         for g_md5 in gemini_md5s:
@@ -55,7 +63,7 @@ def evaluate_top_n_similarity(embeddings, output_csv="results/similarity_scores_
                     hf_md5.pop(index)  # Prevent duplicate matches
                     break
 
-        common_scores.append({"index": index, "common_score": common_returns / top_n})
+        common_scores.append({"common_score": common_returns / top_n})
 
     if not common_scores:
         print("No valid embeddings to evaluate. Skipping CSV generation.")
@@ -63,7 +71,7 @@ def evaluate_top_n_similarity(embeddings, output_csv="results/similarity_scores_
 
     try:
         with open(output_csv, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=["index", "common_score"])
+            writer = csv.DictWriter(f, fieldnames=["common_score"])
             writer.writeheader()
             writer.writerows(common_scores)
         print(f"Saved top N similarity results to {output_csv}")

@@ -57,6 +57,39 @@ class MilvusDb:
         self.collection.flush()
         print(f"Deleted record with md5: {md5}")
 
+
+    def update_description(self, md5: str, new_description: str):
+        """
+        Update the 'description' field of the record with the given md5.
+        """
+        # 1. Query existing record for its other fields
+        expr = f"md5 == '{md5}'"
+        query_results = self.collection.query(
+            expr=expr,
+            output_fields=["file_path", "embedding"]
+        )
+        if not query_results:
+            print(f"No record found with md5 '{md5}'.")
+            return None
+
+        record = query_results[0]
+        file_path = record["file_path"]
+        embedding = record["embedding"]
+
+        data = [
+            {
+                "md5": md5,
+                "file_path": file_path,
+                "description": new_description,
+                "embedding": embedding
+            }
+        ]
+
+        res = self.collection.upsert(data)
+        self.collection.flush()
+        print(f"Updated description for md5 '{md5}'.")
+        return res
+
     def search_by_embedding(self, query_embedding, limit=10):
         search_params = {"metric_type": "L2", "params": {"nprobe": 10}}
         results = self.collection.search(
@@ -69,8 +102,22 @@ class MilvusDb:
         )
         return results
 
+    def get_by_md5(self, md5: str):
+        """
+        Retrieve a single record matching the given md5.
+        """
+        expr = f"md5 == '{md5}'"
+        results = self.collection.query(
+            expr=expr,
+            output_fields=["md5", "file_path", "description", "embedding"]
+        )
+        if not results:
+            print(f"No record found for md5 '{md5}'.")
+            return None
+        return results[0]
+
     def get_all_md5_hashes(self):
         expr = "md5 != ''"  # any valid filtering on your text field
         query_results = self.collection.query(expr=expr, output_fields=["md5"])
-        md5_hashes = {record["md5"] for record in query_results if "md5" in record}
+        md5_hashes = list({record["md5"] for record in query_results if "md5" in record})
         return md5_hashes

@@ -5,7 +5,7 @@ import time
 import numpy as np
 import pickle
 
-def init_db(db_path="labels_raghav.db"):
+def init_db(db_path="labels.db"):
     """Initializes the SQLite database and creates the necessary tables if they don't exist."""
     db_path = os.path.abspath(db_path)  # Make path absolute
     print(f"🔍 Initializing DB at: {db_path}")
@@ -81,7 +81,7 @@ def migrate_db(db_path="labels.db"):
             image_path TEXT,
             label TEXT,
             prompt TEXT,
-            UNIQUE(md5, prompt)
+            UNIQUE(md5)
         )
     """)
 
@@ -326,7 +326,9 @@ def retrieve_images(conn, hashes):
     cursor = conn.cursor()
 
     placeholders = ','.join('?' for _ in hashes)
+    print(placeholders)
     hashes = list(hashes)
+    print(hashes)
     query = f"SELECT * FROM images WHERE md5 NOT IN ({placeholders})"
     cursor.execute(query, hashes)
 
@@ -335,6 +337,25 @@ def retrieve_images(conn, hashes):
         raise Exception("No images to label")
     else:
         return infos
+
+def retrive_existing_images(conn, hashes):
+    """Retrieves the images in the SQL DB"""
+    cursor = conn.cursor()
+
+    placeholders = ','.join('?' for _ in hashes)
+    print(placeholders)
+    hashes = list(hashes)
+    print(hashes)
+    query = f"SELECT * FROM images WHERE md5 IN ({placeholders})"
+    cursor.execute(query, hashes)
+
+    infos = cursor.fetchall()
+    if not infos:
+        raise Exception("No images to label")
+    else:
+        return infos
+
+
 
 def retrieve_all_images(conn):
     """Retrieves the images in the SQL DB"""
@@ -367,3 +388,10 @@ def get_all_labels(conn, prompt):
     cursor = conn.cursor()
     cursor.execute("SELECT image_path, label FROM images WHERE prompt = ?", (prompt,))
     return dict(cursor.fetchall())
+
+
+def get_description_by_md5(conn, md5):
+    cursor = conn.cursor()
+    cursor.execute("SELECT description FROM images WHERE md5 = ?", (md5, ))
+
+    return cursor.fetchone()
