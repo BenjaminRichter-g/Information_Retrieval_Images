@@ -27,12 +27,7 @@ pip install -r requirements.txt
 ```
 
 
-5. You'll need to have docker installed for the next part, as we're going to install Milvus. We couldn't load the docker folder containing the data in the 
-project so PLEASE DOWNLOAD THE DATA from the following link and put it in the root directory:
-
-```
-https://drive.google.com/drive/folders/1G0zSrczbMgX7cY1I2PFeF0bbqSCSoPis?usp=drive_link
-```
+5. You'll need to have docker installed for the next part, as we're going to install Milvus. We couldn't load the docker folder containing the data.
 
 This is our vectorised Milvus database and is required to run the code.
 Make sure Docker is opened.
