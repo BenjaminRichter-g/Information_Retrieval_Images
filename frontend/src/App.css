@@ -106,7 +106,8 @@ body, html, .app {
   
   .result-image {
     width: 100%;
-    height: 200px;
+    /*height: 200px;*/
+    aspect-ratio: 4/3;
     object-fit: cover;
   }
   

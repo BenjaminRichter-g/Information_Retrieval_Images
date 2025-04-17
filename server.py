@@ -164,15 +164,14 @@ def search_endpoint(request: SearchRequest):
         ]
         descriptions = [get_description_by_md5(conn, md5) for md5 in md5s]
 
-        for index in range(len(results)):
-            
+        for index in range(len(md5s)):
             output.append({
                 "md5": md5s[index],
                 "file_path": f"http://localhost:8000/get-image/{os.path.basename(file_paths[index])}",
                 "description": descriptions[index],
                 "distance": distances[index]
             })
-            #print(f"Result {index}: {output[index]}")
+            print(f"Result {index}: {output[index]}")
         return {"results": output}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
