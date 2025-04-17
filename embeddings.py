@@ -17,8 +17,7 @@ class Embedder:
                 contents=content
             )
             print(f"Raw API response type: {type(result.embeddings)}")  # Debug print
-            #print(f"Raw API response content: {result.embeddings[0]}")  # Debug print
-
+            
             # Extract the actual embedding data
             if hasattr(result.embeddings[0], 'values'):  # Check if 'values' attribute exists
                 embedding = np.array(result.embeddings[0].values, dtype=np.float32)
@@ -33,7 +32,13 @@ class Embedder:
 
     def batch_embeddings(self, contents):
         results = []
+        nb_embed = len(contents)
+        nb_done = 0
         for content in contents:
+            print(f"Finished the {nb_done} out of {nb_embed}")
+            print(f"Embeded caption: {content}")
+            nb_done += 1
+            time.sleep(4)
             try:
                 embedding = self.get_embedding(content)
                 if embedding is None or not isinstance(embedding, list):
@@ -44,6 +49,7 @@ class Embedder:
             except Exception as e:
                 print(f"Error {e} has occurred for content {content}")
                 results.append(None)
+
         return results
     
     def double_embedding_test(self, gemini_caption, hf_caption):

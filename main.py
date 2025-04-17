@@ -40,8 +40,8 @@ def main():
     parser.add_argument(
         "--dir",
         type=str,
-        default="data/coco_subset/images",
-        help="Directory containing images for label creation or post-testing (default: images/)."
+        default="data/coco_validation_2017/val2017",
+        help="Directory containing images for label creation (default: images/)."
     )
     parser.add_argument(
         "--reset",
@@ -60,19 +60,22 @@ def main():
         help="Run database migration to ensure the schema is up to date."
     )
 
+
+  parser.add_argument(
+            "--show-db",
+            action="store_true",
+            help = "uniquely for testing, shows what the db contains"
+    )  
     args = parser.parse_args()
 
-    """if args.migrate_db:
-        print("Running database migration...")
-        migrate_db()
-        print("Database migration completed.")
-        return """ # Exit after migration to avoid running other operations
-
+  
+    prompt = "Generate a short, realistic caption like those in the MS-COCO dataset."
+    
     if args.create_label:
         print("Starting the labeling process...")
         model = ga.ModelApi()
         conn = init_db()
-        label_images(args.dir, model, conn, prompt="Generate a short, realistic caption like those in the MS-COCO dataset.")
+        label_images(args.dir, model, conn, prompt)
         conn.close()
         print("Label creation completed.")
 
@@ -148,6 +151,9 @@ def main():
         save_coco_subset(samples)
         return
 
+    if args.show_db:
+        conn = init_db()
+        retrieve_all_images(conn)
 
     if args.embed_text:
         milvus_db = vd.MilvusDb()
@@ -165,27 +171,25 @@ def main():
             conn.close()
             return
 
-        # Extract descriptions from the images
-        descriptions = [image[2] for image in images]  # Ensure this is a list of strings
-        print(f"Descriptions: {descriptions}")  # Debug print
 
-        embedding = embedder.batch_embeddings(descriptions)
-
+        nb_images = len(images)
+        nb_done = 0
         for index in range(len(images)):
-            if index >= len(embedding) or embedding[index] is None:
-                print(f"Skipping image {images[index][1]} due to missing or invalid embedding.")
-                continue
+            print(f"Finished the {nb_done} out of {nb_images}")
+            print(f"Embeded caption: {images[index][3]}")
+            nb_done+=1
+            try:
+                time.sleep(4)
+                embedding = embedder.get_embedding(images[index][3])
+                if embedding is not None:
+                  milvus_db.insert_record(images[index][0], images[index][1], images[index][2], embedding)
+                else:
+                  print("Skipped due to None return")
+            except Exception as e:
+                time.sleep(1)
+                print(e)
+        print("inserted into milvus done")
 
-            # Ensure the embedding is a flat list of floats
-            embedding_vector = embedding[index]
-            if isinstance(embedding_vector, np.ndarray):
-                embedding_vector = embedding_vector.tolist()  # Convert NumPy array to list
-            elif not isinstance(embedding_vector, list):
-                print(f"Invalid embedding format for image {images[index][1]}. Skipping...")
-                continue
-
-            print(f"Inserting record for image: {images[index][1]}")
-            milvus_db.insert_record(images[index][0], images[index][1], images[index][2], embedding_vector)
 
         # Testing retrieval
         res = milvus_db.get_all_md5_hashes()

@@ -42,11 +42,10 @@ class ModelApi():
             print(f"Error: Image file not found at {image_path}")
             return None
         except Exception as e:
-            print(f"Error opening image: {e}")
+            print(f"Error opening emage: {e}")
             return None
-        
-        time.sleep(5)
-        
+        time.sleep(4)
+
         try:
             response = self.__client.models.generate_content(
                 model="gemini-2.0-flash",
@@ -54,15 +53,12 @@ class ModelApi():
             )
             print(response.text)
             return response.text
-        
         except google.api_core.exceptions.ResourceExhausted as e:
             print("⛔ Rate limit hit (429). Try again later.")
             return None
-        
         except google.api_core.exceptions.ServiceUnavailable as e:
             print("🚫 Model is overloaded (503), retrying in 10s...")
             return self.imageQuery(image_path, prompt)  # retry once
-        
         except Exception as e:
             print(f"❌ Error during image processing: {e}")
             return None
@@ -88,3 +84,4 @@ class ModelApi():
         except Exception as e:
             print(f"Error generating Hugging Face caption for {image_path}: {e}")
             return None
+
