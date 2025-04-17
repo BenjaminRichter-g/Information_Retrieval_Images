@@ -1,4 +1,6 @@
 import argparse
+
+from PIL.Image import init
 import gemini_api as ga
 import embeddings as emb
 from db import *
@@ -152,6 +154,8 @@ def main():
         return
 
     if args.show_db:
+        conn = init_db()
+        print(len(retrieve_all_images(conn)))
         vector_db = vd.MilvusDb()
         print(len(vector_db.get_all_md5_hashes()))
         
