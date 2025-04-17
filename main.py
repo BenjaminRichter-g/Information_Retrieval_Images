@@ -1,11 +1,9 @@
 import argparse
-
 from PIL.Image import init
 import gemini_api as ga
 import embeddings as emb
 from db import *
 import vector_db as vd
-from caption_generator_post import generate_captions  # Import for post-testing
 from post_test_score import *
 import numpy as np
 import time
@@ -68,6 +66,13 @@ def main():
             action="store_true",
             help = "uniquely for testing, shows what the db contains"
     )  
+
+    parser.add_argument(
+            "--small-test",
+            action="store_true",
+            help = "Small test to see how the captioning and embedding process works, note this generates captions and embeddings but does not save them. An API key is required"
+    )
+
     args = parser.parse_args()
 
   
@@ -81,9 +86,31 @@ def main():
         conn.close()
         print("Label creation completed.")
 
+    if args.small_test:
+        model = ga.ModelApi()
+        conn = init_db("small_test.db")
+        label_images("data/test_subset", model, conn, prompt)
+
+        embedder = emb.Embedder()
+        images = retrieve_all_images(conn)
+
+        nb_images = len(images)
+        nb_done = 0
+        for index in range(len(images)):
+            print(f"Finished the {nb_done} out of {nb_images}")
+            print(f"Embeded caption: {images[index][3]}")
+            nb_done+=1
+            try:
+                time.sleep(4)
+                embedding = embedder.get_embedding(images[index][3])
+            except Exception as e:
+                time.sleep(1)
+                print(e)
+
+
     if args.create_label_tests:
         print("Starting the labeling process...")
-        model = ga.ModelApi()
+        model = ga.ModelApi(init_hf=True)
         conn = init_db()
         label_images_tests('data/tests', model, conn, prompt="Generate a short, realistic caption like those in the MS-COCO dataset.")
         embedder = emb.Embedder()

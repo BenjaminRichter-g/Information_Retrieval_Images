@@ -27,15 +27,23 @@ pip install -r requirements.txt
 ```
 
 
-5. You'll need to have docker installed for the next part, as we're going to install Milvus. Go to the /docker folder. There is a README in there but all you need to do is:
+5. You'll need to have docker installed for the next part, as we're going to install Milvus. We couldn't load the docker folder containing the data in the 
+project so PLEASE DOWNLOAD THE DATA from the following link and put it in the root directory:
 
+```
+https://drive.google.com/drive/folders/1G0zSrczbMgX7cY1I2PFeF0bbqSCSoPis?usp=drive_link
+```
+
+This is our vectorised Milvus database and is required to run the code.
+Make sure Docker is opened.
+Once the docker folder is put in the root directory, navigate inside and execute:
+There is a README in there but all you need to do is:
 ```
 bash standalone_embed.sh start 
 ```
 to install and launch the milvus server
 
-
-6. Two modes of use, you can use:
+6. Two modes of use, you can use: (This is not recommended as its a lengthy procedure, the --small-test described bellow allows you to experience a small subset of the process)
 
     1. --create-label // in order to label all the images in the images folder with gemini 
     2. --embed-text // in order to embed the created descriptions
@@ -46,10 +54,22 @@ python main.py --help
 ```
 for a quick description of the options
 
-# Main branch
+7. To execute the small test simply run:
+```
+python main.py --small-test
+```
+and it'll show you the process of creating a caption and an embedding for 3 randomly selected images.
 
-the main branch is protected
+## Running the app to use like in demo (Step 1 to 5 is required to run)
 
+To run the app:
+
+navigate to the directory which has server.py in and in the command line execute:
+uvicorn server:app --reload
+
+then navigate into the frontend directory and install everything and then run it:
+npm install
+npm start
 
 # Gemini captioning and evaluation
 This part of the project focuses on generating image captions using Google's Gemini model and evaluating them against COCO ground-truth captions using semantic similarity.
@@ -61,35 +81,17 @@ Text embedding (Gemini's embedding-001)
 COCO dataset
 Cosine similarity for semantic evaluation
 
-* The data/ folder is not included in this repository to keep it lightweight. To reproduce the results, you’ll need to manually download and prepare the necessary COCO data.
-
- Step 1: Download COCO 2017 Files
+Data used:
 2017 Validation Images
-Download from http://images.cocodataset.org/zips/val2017.zip
+Download from http://images.cocodataset.org/zips/val2017.zip (but already included in the repo)
 
 2017 Captions Annotations
 Download from http://images.cocodataset.org/annotations/annotations_trainval2017.zip
 
-Extract the files to structure th eproject like this:
-Information_Retrieval_Images/
-├── data/
-│   └── coco/
-│       ├── images/
-│       │   └── val2017/                   # From val2017.zip
-│       └── annotations/
-│           └── captions_val2017.json      # From annotations_trainval2017.zip
 
+## Pre-Processing tests
 
-
-output structure:
-data/
-└── coco_subset/
-    ├── images/                  # Selected COCO images
-    ├── references.json          # COCO captions
-    ├── gemini_captions.json     # Generated Gemini captions
-    └── similarity_scores.csv    # Evaluation results
-
-To run:
+To run the test comparing the coco and gemini caption generation use:
 1. Generate a COCO subset:
 python main.py --sample-coco
 
@@ -106,12 +108,13 @@ python caption_generator.py
 3. Run evaluation:
 python evaluate_gemini_cap.py
 
+## Post-processing tests
 
-To run the app:
-
-navigate to the directory which has server.py in and in the command line execute:
-uvicorn server:app --reload
-
-then navigate into the frontend directory and install everything and then run it:
-npm install
-npm start
+To run the post-processing test, firs run: (This is not recommended as you will hit quota limits, the data is already in labels_raghav.db and the next command can be executed)
+```
+python main.py --create-label-tests
+```
+then run
+```
+python main.py --post-test
+```
