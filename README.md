@@ -41,6 +41,10 @@ There is a README in there but all you need to do is:
 ```
 bash standalone_embed.sh start 
 ```
+OR for WINDOWS
+```
+standalone.bat start
+```
 to install and launch the milvus server
 
 6. Two modes of use, you can use: (This is not recommended as its a lengthy procedure, the --small-test described bellow allows you to experience a small subset of the process)
