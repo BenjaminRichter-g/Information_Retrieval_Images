@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
-
+from fastapi.responses import FileResponse
 import os
 
 import gemini_api as ga
@@ -115,6 +115,15 @@ def reset_db_endpoint(request: ResetRequest):
     else:
         return {"message": "Reset operation cancelled."}
 
+from fastapi.responses import FileResponse
+import os
+
+@app.get("/get-image/{filename}")
+def get_image(filename: str):
+    path = os.path.join("data/coco_validation_2017/val2017", filename)
+    if os.path.isfile(path):
+        return FileResponse(path)
+    return {"error": "File not found"}
 
 @app.post("/search")
 def search_endpoint(request: SearchRequest):
@@ -159,10 +168,11 @@ def search_endpoint(request: SearchRequest):
             
             output.append({
                 "md5": md5s[index],
-                "file_path": file_paths[index],
+                "file_path": f"http://localhost:8000/get-image/{os.path.basename(file_paths[index])}",
                 "description": descriptions[index],
                 "distance": distances[index]
             })
+            #print(f"Result {index}: {output[index]}")
         return {"results": output}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
