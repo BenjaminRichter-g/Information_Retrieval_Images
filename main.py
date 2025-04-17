@@ -1,7 +1,7 @@
 import argparse
 import gemini_api as ga
 import embeddings as emb
-from db import clean_embeddings_test, init_db, label_images ,label_images_tests, retrieve_images, drop_database, retrieve_captions, save_embedding, retrieve_embeddings # Import migrate_db
+from db import *
 import vector_db as vd
 from caption_generator_post import generate_captions  # Import for post-testing
 from post_test_score import *
@@ -61,7 +61,7 @@ def main():
     )
 
 
-  parser.add_argument(
+    parser.add_argument(
             "--show-db",
             action="store_true",
             help = "uniquely for testing, shows what the db contains"
@@ -152,8 +152,9 @@ def main():
         return
 
     if args.show_db:
-        conn = init_db()
-        retrieve_all_images(conn)
+        vector_db = vd.MilvusDb()
+        print(len(vector_db.get_all_md5_hashes()))
+        
 
     if args.embed_text:
         milvus_db = vd.MilvusDb()
@@ -215,8 +216,6 @@ def main():
         confirmation = input("Are you sure? This is not reversible and it might take a while to relabel and embed the images? Confirm with YES, anything else will be considered a no\n")
         if confirmation.lower() == "yes":
             drop_database()
-            milvus_db = vd.MilvusDb()
-            milvus_db.delete_entire_db()
 
 
     else:
