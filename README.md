@@ -65,11 +65,15 @@ and it'll show you the process of creating a caption and an embedding for 3 rand
 To run the app:
 
 navigate to the directory which has server.py in and in the command line execute:
+```
 uvicorn server:app --reload
+```
 
 then navigate into the frontend directory and install everything and then run it:
+```
 npm install
 npm start
+```
 
 # Gemini captioning and evaluation
 This part of the project focuses on generating image captions using Google's Gemini model and evaluating them against COCO ground-truth captions using semantic similarity.
@@ -93,7 +97,9 @@ Download from http://images.cocodataset.org/annotations/annotations_trainval2017
 
 To run the test comparing the coco and gemini caption generation use:
 1. Generate a COCO subset:
+```
 python main.py --sample-coco
+```
 
 will create:
 data/coco_subset/
@@ -103,10 +109,14 @@ data/coco_subset/
 ├── similarity_scores.csv (after evaluation)
 
 2. Generate Gemini captions:
+```
 python caption_generator.py
+```
 
 3. Run evaluation:
+```
 python evaluate_gemini_cap.py
+```
 
 ## Post-processing tests
 
