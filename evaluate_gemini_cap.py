@@ -49,13 +49,13 @@ def evaluate_captions(image_dir, reference_path, output_csv, prompt):
     with open(reference_path, "r") as f:
         reference_captions = json.load(f)
 
-    # Combine Gemini and reference captions into rows
+    """# Combine Gemini and reference captions into rows
     rows = []
     for image_name, gemini_caption in gemini_captions.items():
         reference_caption = reference_captions.get(image_name)
         if reference_caption:
             rows.append((image_name, gemini_caption, reference_caption))
-
+"""
     results = []
 
     for md5, gemini_caption, reference_caption in rows:

@@ -25,10 +25,11 @@ def init_db(db_path="labels_raghav.db"):
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS images (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            md5 TEXT UNIQUE,
+            md5 TEXT,
             image_path TEXT NOT NULL,
             label TEXT,
-            prompt TEXT NOT NULL
+            prompt TEXT NOT NULL,
+            UNIQUE(md5)
         )
     """)
 

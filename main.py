@@ -195,29 +195,14 @@ def main():
         print(res)
 
     if args.post_test:
-        # Paths for post-testing
-        image_dir = args.dir
-        gemini_captions_path = "data/coco_subset/references.json"
-        other_model_captions_path = "data/coco_subset/other_model_captions.json"
-        reference_captions_path = "data/coco_subset/references.json"
-        output_csv_path = "data/coco_subset/post_test_similarity_scores.csv"
+        conn = init_db("labels_raghav.db")
 
-        # Step 1: Generate captions using the ViT-GPT2 model
-        print("Generating captions using the ViT-GPT2 model...")
-        generate_captions(image_dir, output_path="data/coco_subset/other_model_captions.json",
-                          prompt="Generate a short, realistic caption like those in the MS-COCO dataset",
-                          reference_captions_path="data/coco_subset/references.json")
+        embeddings = retrieve_embeddings(conn)
 
-        # Step 2: Evaluate and compare captions
-        print("Evaluating and comparing captions...")
-        evaluate_post_testing(
-            gemini_path=gemini_captions_path,
-            other_model_path=other_model_captions_path,
-            reference_path=reference_captions_path,
-            output_csv=output_csv_path
-        )
-        print(f"Post-testing evaluation completed. Results saved to {output_csv_path}.")
-
+        evaluate_embedding_cosine_similarity(embeddings, output_csv="results/similarity_scores_embedding.csv")
+        evaluate_top_n_similarity(embeddings, output_csv="results/similarity_scores_top_n.csv", top_n=10)
+       
+        
     if args.sample_coco:
         from coco_utils import load_coco_dataset, sample_coco_subset, save_coco_subset
         dataset = load_coco_dataset()
