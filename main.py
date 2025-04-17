@@ -105,9 +105,6 @@ def main():
                         print(f"Invalid embeddings for caption {caption[0]}. Skipping...")
                         continue
 
-                    print(f"Gemini embedding shape: {gemini_embed.shape}")
-                    print(f"Hugging Face embedding shape: {hf_embed.shape}")
-
                     save_embedding(conn, caption[0], gemini_embed, hf_embed)
                 except Exception as e:
                     print(f"Error processing caption {caption[0]}: {e}")

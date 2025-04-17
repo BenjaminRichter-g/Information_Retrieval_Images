@@ -286,7 +286,9 @@ def clean_embeddings_test(conn):
 
     
 def retrieve_embeddings(conn):
-    """Retrieves the embeddings and deserializes them back into ContentEmbedding objects."""
+    """
+    Retrieves the embeddings and deserializes them back into NumPy arrays.
+    """
     cursor = conn.cursor()
     query = "SELECT * FROM embeddings"
     cursor.execute(query)
@@ -295,8 +297,8 @@ def retrieve_embeddings(conn):
     embeddings = []
     for res in infos:
         md5 = res[0]
-        gemini_embedding = pickle.loads(res[1]) if res[1] else None
-        huggingface_embedding = pickle.loads(res[2]) if res[2] else None
+        gemini_embedding = np.frombuffer(res[1], dtype=np.float32) if res[1] else None
+        huggingface_embedding = np.frombuffer(res[2], dtype=np.float32) if res[2] else None
 
         if gemini_embedding is None or huggingface_embedding is None:
             print(f"Invalid embeddings found for MD5 {md5}. Skipping...")
