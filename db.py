@@ -392,6 +392,6 @@ def get_all_labels(conn, prompt):
 
 def get_description_by_md5(conn, md5):
     cursor = conn.cursor()
-    cursor.execute("SELECT description FROM images WHERE md5 = ?", (md5, ))
+    cursor.execute("SELECT label FROM images WHERE md5 = ?", (md5, ))
 
     return cursor.fetchone()

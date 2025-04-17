@@ -7,7 +7,7 @@ import os
 
 import gemini_api as ga
 import embeddings as emb
-from db import init_db, label_images, retrieve_images, drop_database
+from db import init_db, label_images, retrieve_images, drop_database, get_description_by_md5
 import vector_db as vd
 
 # -------------------- FastAPI setup --------------------
@@ -124,12 +124,13 @@ def search_endpoint(request: SearchRequest):
     """
     # 1. embed the query
     embedder = emb.Embedder()
+    conn = init_db()
     try:
         query_embedding_result = embedder.get_embedding(request.query)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    query_embedding = query_embedding_result[0].values  # single vector
+    query_embedding = query_embedding_result  # single vector
 
     # 2. search in Milvus
     try:
@@ -137,16 +138,31 @@ def search_endpoint(request: SearchRequest):
         results = milvus_db.search_by_embedding(query_embedding, limit=request.limit)
         # Format results for the front-end
         output = []
-        for result in results:
-            # result is typically a list of hits; each 'hit' has .ids, .distance, .entity
-            for hit in result:
-                # entity will contain fields from the output_fields (md5, file_path, description)
-                output.append({
-                    "md5": hit.entity.get("md5", ""),
-                    "file_path": hit.entity.get("file_path", ""),
-                    "description": hit.entity.get("description", ""),
-                    "distance": hit.distance
-                })
+        md5s = [
+            hit.entity.get("md5")
+            for result in results  # each result is a Hits object
+            for hit    in result            # each hit is a Hit object
+        ]
+        file_paths =  [
+            hit.entity.get("file_path")
+            for result in results  # each result is a Hits object
+            for hit    in result            # each hit is a Hit object
+        ]
+        distances =  [
+            hit.distance
+            for result in results  # each result is a Hits object
+            for hit    in result            # each hit is a Hit object
+        ]
+        descriptions = [get_description_by_md5(conn, md5) for md5 in md5s]
+
+        for index in range(len(results)):
+            
+            output.append({
+                "md5": md5s[index],
+                "file_path": file_paths[index],
+                "description": descriptions[index],
+                "distance": distances[index]
+            })
         return {"results": output}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
