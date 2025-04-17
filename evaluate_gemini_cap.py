@@ -33,7 +33,7 @@ prompts = [
 def evaluate_captions(image_dir, reference_path, output_csv, prompt):
     # Connect to DB and initialize model
     conn = init_db("labels.db")
-    model = ModelApi()
+    model = ModelApi(init_hf=True)
 
     # Label any new images not in the DB
     label_images(image_dir, model, conn, prompt)

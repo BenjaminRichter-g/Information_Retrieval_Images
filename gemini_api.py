@@ -7,15 +7,16 @@ import google.api_core.exceptions
 from transformers import VisionEncoderDecoderModel, ViTImageProcessor, AutoTokenizer
 
 class ModelApi():
-    def __init__(self):
+    def __init__(self, init_hf=False):
         # Initialize the Gemini API client
         config = dotenv_values(".env")
         self.__client = genai.Client(api_key=config.get("API_KEY"))
-
-        # Initialize the Hugging Face model, processor, and tokenizer
-        self.hf_model = VisionEncoderDecoderModel.from_pretrained("ydshieh/vit-gpt2-coco-en")
-        self.processor = ViTImageProcessor.from_pretrained("ydshieh/vit-gpt2-coco-en")
-        self.tokenizer = AutoTokenizer.from_pretrained("ydshieh/vit-gpt2-coco-en")
+        
+        if init_hf:
+            # Initialize the Hugging Face model, processor, and tokenizer
+            self.hf_model = VisionEncoderDecoderModel.from_pretrained("ydshieh/vit-gpt2-coco-en")
+            self.processor = ViTImageProcessor.from_pretrained("ydshieh/vit-gpt2-coco-en")
+            self.tokenizer = AutoTokenizer.from_pretrained("ydshieh/vit-gpt2-coco-en") 
 
     def textQuery(self, text="Explain how AI works"):
         response = self.__client.models.generate_content(
