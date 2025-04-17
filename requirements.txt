@@ -7,3 +7,5 @@ pymilvus
 google-genai
 torchvision
 pycocotools
+protobuf==3.20.2
+transformers==4.25.1

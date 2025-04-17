@@ -1,31 +1,45 @@
 import numpy as np
-from gemini_api import ModelApi
-from google import generativeai as genai
-from dotenv import load_dotenv
-import os
-"""
-Embed any text using Gemini's embedding model
+import sqlite3
 
-Compute cosine similarity between two captions
-"""
-load_dotenv()
-genai.configure(api_key=os.getenv("API_KEY"))
-model = ModelApi()
+from google import genai
+from dotenv import dotenv_values
+import numpy as np
 
-def embed_text(text):
-    try:
-        response = genai.embed_content(
-            model="models/embedding-001",
-            content=text,
-            task_type="retrieval_document"
-        )
-        return np.array(response["embedding"])
-    except Exception as e:
-        print(f"Error generating embedding: {e}")
-        return None
-def cosine_similarity(text1, text2):
-    emb1 = embed_text(text1)
-    emb2 = embed_text(text2)
-    if emb1 is None or emb2 is None:
+# Initialize the GenAI client
+config = dotenv_values(".env")
+client = genai.Client(api_key=config.get("API_KEY"))
+
+def embed_text(text, conn):
+    """Generates or retrieves an embedding for a given text."""
+    cursor = conn.cursor()
+
+    # Check if the embedding already exists
+    cursor.execute("SELECT gemini_embedding FROM embeddings WHERE md5 = ?", (text,))
+    result = cursor.fetchone()
+    if result:
+        print(f"Using cached embedding for text: {text[:50]}...")
+        return np.frombuffer(result[0], dtype=np.float32)
+
+    # Generate a new embedding using Google GenAI
+    response = client.models.embed_content(
+        model="gemini-embedding-exp-03-07",
+        contents=text
+    )
+    embedding = np.array(response.embeddings[0], dtype=np.float32)
+    embedding_bytes = embedding.tobytes()
+
+    # Save the embedding to the database
+    cursor.execute("""
+        INSERT INTO embeddings (md5, gemini_embedding)
+        VALUES (?, ?)
+    """, (text, embedding_bytes))
+    conn.commit()
+
+    return embedding
+
+
+def cosine_similarity(embedding1, embedding2):
+    """Computes cosine similarity between two embeddings."""
+    if embedding1 is None or embedding2 is None:
         return 0.0
-    return float(np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2)))
+    return float(np.dot(embedding1, embedding2) / (np.linalg.norm(embedding1) * np.linalg.norm(embedding2)))

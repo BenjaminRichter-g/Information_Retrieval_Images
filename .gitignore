@@ -4,3 +4,6 @@ InformationRetrievalEnv
 __pycache__/
 labels.db
 data/
+labels_raghav.db
+docker/volumes
+docker/user.yaml

@@ -6,6 +6,7 @@ from pymilvus import (
     DataType,
     Collection
 )
+import numpy as np
 
 class MilvusDb:
     def __init__(self, collection_name="image_embeddings", dim=3072):
@@ -21,7 +22,7 @@ class MilvusDb:
                 FieldSchema(name="md5", dtype=DataType.VARCHAR, max_length=32, is_primary=True, auto_id=False),
                 FieldSchema(name="file_path", dtype=DataType.VARCHAR, max_length=256),
                 FieldSchema(name="description", dtype=DataType.VARCHAR, max_length=512),
-                FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=dim)
+                FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=3072)
             ]
             schema = CollectionSchema(fields, description="Image embeddings with metadata")
             self.collection = Collection(collection_name, schema)
@@ -29,34 +30,25 @@ class MilvusDb:
 
         self.create_index()
 
-
     def create_index(self):
         self.collection.create_index(
-                field_name="embedding",
-                index_params={
-                            "metric_type":"L2",
-                            "index_type":"IVF_FLAT",
-                            "params":{"nlist":1024}
-                            }
-                )
-
+            field_name="embedding",
+            index_params={
+                "metric_type": "L2",
+                "index_type": "IVF_FLAT",
+                "params": {"nlist": 1024}
+            }
+        )
         self.collection.load()
 
-
-    def delete_entire_db(self):
-        utility.drop_collection("image_embeddings")
-        print("Milvus db dropped image_embeddings collection")
-
     def insert_record(self, md5, file_path, description, embedding):
-        data = [
-            [md5],       
-            [file_path],  
-            [description], 
-            [embedding]   
-        ]
+        if not isinstance(embedding, (list, np.ndarray)) or len(embedding) != self.dim:
+            print(f"Invalid embedding for {file_path}. Skipping insertion.")
+            return
+        if isinstance(embedding, np.ndarray):
+            embedding = embedding.tolist()  # Convert NumPy array to list
+        data = [[md5], [file_path], [description], [embedding]]
         result = self.collection.insert(data)
-        self.collection.flush()  
-        print(f"Inserted record for file: {file_path} with md5: {md5}")
         return result
 
     def delete_record(self, md5):
@@ -77,10 +69,8 @@ class MilvusDb:
         )
         return results
 
-
     def get_all_md5_hashes(self):
         expr = "md5 != ''"  # any valid filtering on your text field
         query_results = self.collection.query(expr=expr, output_fields=["md5"])
         md5_hashes = {record["md5"] for record in query_results if "md5" in record}
         return md5_hashes
-
