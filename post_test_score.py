@@ -2,8 +2,8 @@ import json
 import csv
 import numpy as np
 from embedding_utils import embed_text, cosine_similarity
-from embedding_utils import embed_text, cosine_similarity
 import vector_db as vd
+from db import init_db
 
 
 def evaluate_embedding_cosine_similarity(embeddings, output_csv="results/similarity_scores_embedding.csv"):
@@ -68,6 +68,9 @@ def evaluate_top_n_similarity(embeddings, output_csv="results/similarity_scores_
         print(f"Error saving results to CSV: {e}")
 
 def evaluate_post_testing(gemini_path, other_model_path, reference_path, output_csv):
+    conn = init_db("labels.db")
+    cursor = conn.cursor()
+    
     # Load captions
     try:
         with open(gemini_path, "r") as f:
@@ -115,7 +118,7 @@ def evaluate_post_testing(gemini_path, other_model_path, reference_path, output_
 
         # Embed Gemini caption
         print(f"Generating embedding for Gemini caption: {gemini_caption[:50]}...")
-        gemini_embedding = embed_text(gemini_caption)
+        gemini_embedding = embed_text(gemini_caption, conn)
         if gemini_embedding is None or np.all(gemini_embedding == 0):
             print(f"Skipping invalid Gemini embedding for {filename}.")
             continue

@@ -16,6 +16,9 @@ import csv
 from embedding_utils import cosine_similarity, embed_text
 import numpy as np
 import sqlite3
+from db import init_db, get_all_labels, label_images
+from gemini_api import ModelApi
+
 
 prompts = [
     "Describe what is happening in this image.",
@@ -27,16 +30,16 @@ prompts = [
     "Write a caption that describes the main activity in this photo.",
 ]
 
-def evaluate_captions(image_dir, reference_path, output_csv,prompt):
+def evaluate_captions(image_dir, reference_path, output_csv, prompt):
     # Connect to DB and initialize model
     conn = init_db("labels.db")
     model = ModelApi()
 
     # Label any new images not in the DB
-    label_images(image_dir, model, conn,prompt)
+    label_images(image_dir, model, conn, prompt)
 
     # Load Gemini captions from DB
-    gemini_captions_raw = get_all_labels(conn,prompt)
+    gemini_captions_raw = get_all_labels(conn, prompt)
     gemini_captions = {
         os.path.basename(path): caption
         for path, caption in gemini_captions_raw.items()
@@ -45,6 +48,13 @@ def evaluate_captions(image_dir, reference_path, output_csv,prompt):
     # Load COCO reference captions
     with open(reference_path, "r") as f:
         reference_captions = json.load(f)
+
+    # Combine Gemini and reference captions into rows
+    rows = []
+    for image_name, gemini_caption in gemini_captions.items():
+        reference_caption = reference_captions.get(image_name)
+        if reference_caption:
+            rows.append((image_name, gemini_caption, reference_caption))
 
     results = []
 
@@ -88,7 +98,6 @@ def evaluate_captions(image_dir, reference_path, output_csv,prompt):
         print(f"Saved evaluation results to {output_csv}")
     else:
         print("No valid results to save.")
-
 
 if __name__ == "__main__":
     conn = sqlite3.connect("labels.db")

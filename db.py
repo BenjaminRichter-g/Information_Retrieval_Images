@@ -1,9 +1,9 @@
-
 import sqlite3
 import os
 from hashlib import md5
 import time
 import numpy as np
+import pickle
 
 def init_db(db_path="labels_raghav.db"):
     """Initializes the SQLite database and creates the necessary tables if they don't exist."""
@@ -15,19 +15,20 @@ def init_db(db_path="labels_raghav.db"):
 
     # Create the images table
     cursor.execute("""
-
         CREATE TABLE IF NOT EXISTS tests (
             md5 TEXT PRIMARY KEY,
             image_path TEXT NOT NULL,
             prompt TEXT NOT NULL
+        )
+    """)
 
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS images (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            md5 TEXT,
-            image_path TEXT,
+            md5 TEXT UNIQUE,
+            image_path TEXT NOT NULL,
             label TEXT,
-            prompt TEXT,
-            UNIQUE(md5)  
+            prompt TEXT NOT NULL
         )
     """)
 
@@ -187,20 +188,22 @@ def save_embedding(conn, md5, gemini_embedding, huggingface_embedding):
     """Saves the embeddings for a given image (identified by md5) to the database."""
     cursor = conn.cursor()
 
-    # Convert the embeddings to bytes for storage
-    gemini_embedding_bytes = np.array(gemini_embedding).tobytes()
-    huggingface_embedding_bytes = np.array(huggingface_embedding).tobytes()
-
     try:
+        # Convert the embeddings to bytes for storage
+        gemini_embedding_bytes = gemini_embedding.tobytes() if isinstance(gemini_embedding, np.ndarray) else None
+        huggingface_embedding_bytes = huggingface_embedding.tobytes() if isinstance(huggingface_embedding, np.ndarray) else None
+
+        if gemini_embedding_bytes is None or huggingface_embedding_bytes is None:
+            raise ValueError("One or both embeddings are invalid and cannot be saved.")
+
         cursor.execute("""
             INSERT OR REPLACE INTO embeddings (md5, gemini_embedding, huggingface_embedding)
             VALUES (?, ?, ?)
         """, (md5, gemini_embedding_bytes, huggingface_embedding_bytes))
         conn.commit()
-    except sqlite3.Error as e:
+    except Exception as e:
         print(f"Error saving embedding for {md5}: {e}")
         conn.rollback()
-
 
 def get_embedding(conn, md5):
     """Retrieves the embeddings for a given image (identified by md5) from the database."""
@@ -247,6 +250,16 @@ def clean_embeddings_test(conn):
         for row in rows:
             md5, gemini_blob, huggingface_blob = row
 
+            # Validate BLOB sizes
+            if gemini_blob and len(gemini_blob) % 4 != 0:
+                print(f"Invalid Gemini embedding size for MD5: {md5}")
+                invalid_md5s.append(md5)
+                continue
+            if huggingface_blob and len(huggingface_blob) % 4 != 0:
+                print(f"Invalid Hugging Face embedding size for MD5: {md5}")
+                invalid_md5s.append(md5)
+                continue
+
             # Convert BLOBs back to NumPy arrays
             gemini_embedding = np.frombuffer(gemini_blob, dtype=np.float32) if gemini_blob else None
             huggingface_embedding = np.frombuffer(huggingface_blob, dtype=np.float32) if huggingface_blob else None
@@ -272,7 +285,7 @@ def clean_embeddings_test(conn):
 
     
 def retrieve_embeddings(conn):
-    """Retrieves the embeddings and converts them back to NumPy arrays."""
+    """Retrieves the embeddings and deserializes them back into ContentEmbedding objects."""
     cursor = conn.cursor()
     query = "SELECT * FROM embeddings"
     cursor.execute(query)
@@ -281,17 +294,9 @@ def retrieve_embeddings(conn):
     embeddings = []
     for res in infos:
         md5 = res[0]
-        gemini_embedding = None
-        huggingface_embedding = None
+        gemini_embedding = pickle.loads(res[1]) if res[1] else None
+        huggingface_embedding = pickle.loads(res[2]) if res[2] else None
 
-        # Convert BLOBs back to NumPy arrays
-        try:
-            gemini_embedding = np.frombuffer(res[1], dtype=np.float32) if res[1] else None
-            huggingface_embedding = np.frombuffer(res[2], dtype=np.float32) if res[2] else None
-        except Exception as e:
-            print(f"Error converting embeddings for MD5 {md5}: {e}")
-
-        # Check if embeddings are valid
         if gemini_embedding is None or huggingface_embedding is None:
             print(f"Invalid embeddings found for MD5 {md5}. Skipping...")
             continue

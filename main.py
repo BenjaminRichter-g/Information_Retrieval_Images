@@ -60,14 +60,6 @@ def main():
         help="Run database migration to ensure the schema is up to date."
     )
 
-    
-    parser.add_argument(
-        "--sample-coco",
-        action="store_true",
-        help = "download and sample a subset of coco images and captions"
-    )
-    
-
     args = parser.parse_args()
 
     """if args.migrate_db:
@@ -106,12 +98,21 @@ def main():
                     continue
 
                 print(f"Generating embedding for content: {caption[1]}, {caption[2]}")
+                
                 try:
                     gemini_embed, hf_embed = embedder.double_embedding_test(caption[1], caption[2])
-                except Exception as e:
-                    print(f"Error generating embeddings for caption {caption[0]}: {e}")
-                    continue
+                    if gemini_embed is None or hf_embed is None:
+                        print(f"Invalid embeddings for caption {caption[0]}. Skipping...")
+                        continue
 
+                    print(f"Gemini embedding shape: {gemini_embed.shape}")
+                    print(f"Hugging Face embedding shape: {hf_embed.shape}")
+
+                    save_embedding(conn, caption[0], gemini_embed, hf_embed)
+                except Exception as e:
+                    print(f"Error processing caption {caption[0]}: {e}")
+                    continue
+                
                 if gemini_embed is None or hf_embed is None:
                     print(f"Invalid embeddings for caption {caption[0]}. Skipping...")
                     continue
@@ -126,7 +127,7 @@ def main():
                 else:
                     print("Hugging Face embedding is invalid.")
 
-                save_embedding(conn, caption[0], gemini_embed[0].values, hf_embed[0].values)
+                save_embedding(conn, caption[0], gemini_embed, hf_embed)
             except Exception as e:
                 print(f"Error processing caption {caption[0]}: {e}")
                 time.sleep(2)

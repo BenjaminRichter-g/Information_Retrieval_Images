@@ -1,6 +1,7 @@
 from google import genai
 from dotenv import dotenv_values
 import numpy as np
+import time
 
 class Embedder:
 
@@ -15,8 +16,17 @@ class Embedder:
                 model="gemini-embedding-exp-03-07",
                 contents=content
             )
-            return result.embeddings
-        
+            print(f"Raw API response type: {type(result.embeddings)}")  # Debug print
+            #print(f"Raw API response content: {result.embeddings[0]}")  # Debug print
+
+            # Extract the actual embedding data
+            if hasattr(result.embeddings[0], 'values'):  # Check if 'values' attribute exists
+                embedding = np.array(result.embeddings[0].values, dtype=np.float32)
+            else:
+                raise ValueError(f"Unexpected embedding format: {type(result.embeddings[0])}")
+
+            print(f"Generated embedding shape: {embedding.shape}")  # Debug print
+            return embedding
         except Exception as e:
             print(f"Error generating embedding: {e}")
             return None
@@ -38,12 +48,20 @@ class Embedder:
     
     def double_embedding_test(self, gemini_caption, hf_caption):
         try:
+            time.sleep(4)  # Delay before the first API call
             gemini_embedding = self.get_embedding(gemini_caption)
+
+            time.sleep(4)  # Delay before the second API call
             hf_embedding = self.get_embedding(hf_caption)
-            if isinstance(gemini_embedding, list):
-                gemini_embed = np.array(gemini_embed)
-            if isinstance(hf_embedding, list):
-                hf_embed = np.array(hf_embed)
+
+            if gemini_embedding is None or hf_embedding is None:
+                raise ValueError("One or both embeddings are invalid.")
+
+            # Validate embedding dimensions
+            if gemini_embedding.shape[0] != 3072 or hf_embedding.shape[0] != 3072:  # Adjust dimension as needed
+                raise ValueError(f"Unexpected embedding shape: Gemini - {gemini_embedding.shape}, HF - {hf_embedding.shape}")
+
             return gemini_embedding, hf_embedding
         except Exception as e:
             print(f"Error generating double embedding: {e}")
+            return None, None
