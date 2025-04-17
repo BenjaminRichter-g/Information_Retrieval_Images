@@ -40,7 +40,7 @@ EOF
         exit 1
     fi
     
-    docker run -d \
+    sudo docker run -d \
         --name milvus-standalone \
         --security-opt seccomp:unconfined \
         -e ETCD_USE_EMBED=true \
@@ -85,10 +85,10 @@ start() {
         exit 0
     fi
 
-    res=`docker ps -a|grep milvus-standalone|wc -l`
+    res=`sudo docker ps -a|grep milvus-standalone|wc -l`
     if [ $res -eq 1 ]
     then
-        docker start milvus-standalone 1> /dev/null
+        sudo docker start milvus-standalone 1> /dev/null
     else
         run_embed
     fi
@@ -103,7 +103,7 @@ start() {
 }
 
 stop() {
-    docker stop milvus-standalone 1> /dev/null
+    sudo docker stop milvus-standalone 1> /dev/null
 
     if [ $? -ne 0 ]
     then
@@ -115,13 +115,13 @@ stop() {
 }
 
 delete_container() {
-    res=`docker ps|grep milvus-standalone|wc -l`
+    res=`sudo docker ps|grep milvus-standalone|wc -l`
     if [ $res -eq 1 ]
     then
         echo "Please stop Milvus service before delete."
         exit 1
     fi
-    docker rm milvus-standalone 1> /dev/null
+    sudo docker rm milvus-standalone 1> /dev/null
     if [ $? -ne 0 ]
     then
         echo "Delete milvus container failed."
@@ -132,16 +132,16 @@ delete_container() {
 
 delete() {
     delete_container
-    rm -rf $(pwd)/volumes
-    rm -rf $(pwd)/embedEtcd.yaml
-    rm -rf $(pwd)/user.yaml
+    sudo rm -rf $(pwd)/volumes
+    sudo rm -rf $(pwd)/embedEtcd.yaml
+    sudo rm -rf $(pwd)/user.yaml
     echo "Delete successfully."
 }
 
 upgrade() {
     read -p "Please confirm if you'd like to proceed with the upgrade. The default will be to the latest version. Confirm with 'y' for yes or 'n' for no. > " check
     if [ "$check" == "y" ] ||[ "$check" == "Y" ];then
-        res=`docker ps -a|grep milvus-standalone|wc -l`
+        res=`sudo docker ps -a|grep milvus-standalone|wc -l`
         if [ $res -eq 1 ]
         then
             stop
