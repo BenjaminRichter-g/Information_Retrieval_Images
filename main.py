@@ -70,7 +70,7 @@ def main():
             conn.close()
             return
         
-        descriptions = [description[:-1] for (_, _, description) in images] 
+        descriptions = [description[:-1] for (_, _,description, _) in images] 
         embedding = embedder.batch_embeddings(descriptions)
 
         for index in range(len(images)):

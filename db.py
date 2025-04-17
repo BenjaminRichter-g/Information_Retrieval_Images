@@ -4,6 +4,8 @@ import os
 from hashlib import md5
 import time
 
+prompt = "Generate a short, realistic caption like those in the MS-COCO dataset."
+
 def init_db(db_path="labels.db"):
     """Initializes the SQLite database and creates the images table if it doesn't exist."""
        
@@ -24,7 +26,7 @@ def init_db(db_path="labels.db"):
     conn.commit()
     return conn
 
-def label_images(directory, model, conn, prompt):
+def label_images(directory, model, conn,prompt="Generate a short, realistic caption like those in the MS-COCO dataset."):
     """Iterates over image files in the given directory, labels those not already in the database, and stores the results."""
     cursor = conn.cursor()
 

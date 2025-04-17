@@ -75,6 +75,8 @@ class MilvusDb:
             expr=None,
             output_fields=["md5", "file_path", "description"]
         )
+        print("THIS IS THE MILVUS RETURN")
+        print(results)
         return results
 
 

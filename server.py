@@ -140,6 +140,7 @@ def search_endpoint(request: SearchRequest):
         output = []
         for result in results:
             # result is typically a list of hits; each 'hit' has .ids, .distance, .entity
+            print(f'result:{result}')
             for hit in result:
                 # entity will contain fields from the output_fields (md5, file_path, description)
                 output.append({
